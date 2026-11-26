@@ -1,0 +1,18 @@
+group: G2
+tactic: TA0005
+name: Defense Evasion
+techniques:
+  - id: T1562.001
+    name: Impair Defenses - Disable or Modify Tools
+    test_numbers: [1]
+    invasive: true          # tắt/sửa Defender -> CHỈ chạy trên cloud-vm
+    axis: behavior
+    expectation: likely_detected
+    notes: "Tamper Protection thường chặn"
+  - id: T1140
+    name: Deobfuscate/Decode Files or Information
+    test_numbers: [1]
+    invasive: false
+    axis: behavior
+    expectation: likely_missed
+    notes: "giải mã đơn thuần thường lọt"

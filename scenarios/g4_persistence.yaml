@@ -1,0 +1,18 @@
+group: G4
+tactic: TA0003
+name: Persistence
+techniques:
+  - id: T1547.001
+    name: Registry Run Keys / Startup Folder
+    test_numbers: [1]
+    invasive: true          # ghi khóa Run -> CHỈ chạy trên cloud-vm
+    axis: behavior
+    expectation: likely_detected
+    notes: "ghi Run key là mẫu persistence kinh điển, hay bị bắt"
+  - id: T1053.005
+    name: Scheduled Task
+    test_numbers: [1]
+    invasive: true          # tạo scheduled task -> CHỈ chạy trên cloud-vm
+    axis: behavior
+    expectation: likely_missed
+    notes: "scheduled task lành tính hay lọt"

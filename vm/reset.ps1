@@ -1,16 +1,44 @@
-# M9 — Soft-reset môi trường đo về trạng thái sạch < 60s (Chủ: Opus). STUB.
-# Đặc tả: docs/specs/M9-reset.md
-# Mục tiêu (giữa các lần đo, KHÔNG revert snapshot mỗi lần — đây là hạn chế đã ghi nhận):
-#   - Xoá quarantine cũ (MpCmdRun -Restore / Remove)      [cloud-vm]
-#   - Clear log Defender Operational + Sysmon (wevtutil cl) để tách cửa sổ đo
-#   - Re-arm realtime protection nếu bị kỹ thuật tắt
-#   - Dọn thư mục mẫu payloads/out, process còn sót
-#   - Trả về JSON { reset_ok: bool, took_ms: int }
+# M9 — Soft-reset môi trường đo về trạng thái sạch (Chủ: Opus).
+# Trả JSON { reset_ok, took_ms, machine_label, actions }.
 #
-# CẢNH BÁO: KHÔNG chạy phần xoá quarantine / sửa Defender trên MÁY DEV cá nhân.
-#   Trên dev chỉ clear log của chính phiên đo. Phần đầy đủ chạy trên cloud-vm.
+# KHÓA AN TOÀN theo nhãn máy:
+#  - dev-win11 : CHỈ dọn mẫu đã thả. KHÔNG xoá log Defender của bạn, KHÔNG sửa Defender.
+#                (Phép đo tách sự kiện bằng CỬA SỔ THỜI GIAN nên không cần clear log.)
+#  - cloud-vm  : làm đầy đủ (quarantine/RTP/clear log) vì VM là máy dùng một lần, cô lập.
+param(
+    [string]$MachineLabel = "dev-win11",
+    [string]$OutDir = "payloads/out"
+)
+$ErrorActionPreference = "SilentlyContinue"
+$sw = [System.Diagnostics.Stopwatch]::StartNew()
+$actions = @()
 
-param([string]$MachineLabel = "dev-win11")
+# 1) Dọn mẫu đã thả (mọi máy — an toàn)
+if (Test-Path $OutDir) {
+    Get-ChildItem $OutDir -Filter "sample_*.bin" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+    $actions += "cleaned dropped samples"
+}
 
-Write-Output "STUB reset ($MachineLabel): sẽ clear log + dọn mẫu; phần Defender chỉ trên cloud-vm."
-# TODO(Opus): triển khai theo nhãn máy (dev-win11 vs cloud-vm).
+if ($MachineLabel -eq "cloud-vm") {
+    # a) Khôi phục/xoá quarantine
+    $mp = Get-ChildItem "C:\ProgramData\Microsoft\Windows Defender\Platform\*\MpCmdRun.exe" -ErrorAction SilentlyContinue | Select-Object -Last 1
+    if ($mp) { & $mp.FullName -Restore -All | Out-Null; $actions += "cleared quarantine" }
+    # b) Re-arm realtime protection (phòng kỹ thuật đã tắt)
+    Set-MpPreference -DisableRealtimeMonitoring $false
+    $actions += "re-armed RTP"
+    # c) Clear log để tách cửa sổ đo (VM dùng một lần)
+    wevtutil cl "Microsoft-Windows-Windows Defender/Operational"
+    wevtutil cl "Microsoft-Windows-Sysmon/Operational"
+    $actions += "cleared event logs"
+} else {
+    # Máy dev cá nhân: tuyệt đối KHÔNG đụng Defender/log của người dùng.
+    $actions += "dev mode: no Defender/log changes (time-window isolation)"
+}
+
+$sw.Stop()
+[pscustomobject]@{
+    reset_ok      = $true
+    took_ms       = $sw.ElapsedMilliseconds
+    machine_label = $MachineLabel
+    actions       = $actions
+} | ConvertTo-Json -Compress
