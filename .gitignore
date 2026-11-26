@@ -1,0 +1,24 @@
+# Build output / mẫu đã compile (KHÔNG commit payload nhị phân)
+payloads/out/
+*.exe
+*.dll
+*.pdb
+
+# CSDL kết quả đo (sinh ra lúc chạy)
+db/*.sqlite
+db/*.sqlite-*
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Log / tạm
+*.log
+tmp/
+goodware/
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store

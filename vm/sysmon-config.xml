@@ -1,0 +1,156 @@
+<!--
+  sysmon-config.xml — cấu hình Sysmon cho đề tài "Công cụ tự động đánh giá khả năng phát hiện của Windows Defender".
+  Nguyên tắc: ghi đủ bằng chứng cho 5 nhóm kịch bản (G1 Execution, G2 Defense Evasion,
+  G3 Credential Access, G4 Persistence, G5 Discovery/LOLBin) nhưng không ngập log.
+  Tự viết cho đề tài, không dựa trên config bên thứ ba.
+-->
+<Sysmon schemaversion="4.90">
+  <HashAlgorithms>sha256,imphash</HashAlgorithms>
+  <CheckRevocation>False</CheckRevocation>
+
+  <EventFiltering>
+
+    <!-- Event 1: ProcessCreate — ghi TẤT CẢ (exclude rỗng) để truy vết chuỗi tiến trình -->
+    <RuleGroup name="ProcessCreate" groupRelation="or">
+      <ProcessCreate onmatch="exclude">
+        <Image condition="end with">\Sysmon64.exe</Image>
+      </ProcessCreate>
+    </RuleGroup>
+
+    <!-- Event 2: thay đổi thời gian tạo file (timestomping, T1070.006) -->
+    <RuleGroup name="FileCreateTime" groupRelation="or">
+      <FileCreateTime onmatch="exclude" />
+    </RuleGroup>
+
+    <!-- Event 3: kết nối mạng — chỉ từ các tiến trình hay bị lạm dụng + thư mục payload -->
+    <RuleGroup name="NetworkConnect" groupRelation="or">
+      <NetworkConnect onmatch="include">
+        <Image condition="end with">\powershell.exe</Image>
+        <Image condition="end with">\pwsh.exe</Image>
+        <Image condition="end with">\cmd.exe</Image>
+        <Image condition="end with">\mshta.exe</Image>
+        <Image condition="end with">\certutil.exe</Image>
+        <Image condition="end with">\regsvr32.exe</Image>
+        <Image condition="end with">\rundll32.exe</Image>
+        <Image condition="end with">\wscript.exe</Image>
+        <Image condition="end with">\cscript.exe</Image>
+        <Image condition="end with">\bitsadmin.exe</Image>
+        <Image condition="contains">\payloads\</Image>
+      </NetworkConnect>
+    </RuleGroup>
+
+    <!-- Event 5: tiến trình kết thúc — không cần -->
+    <RuleGroup name="ProcessTerminate" groupRelation="or">
+      <ProcessTerminate onmatch="include" />
+    </RuleGroup>
+
+    <!-- Event 6: nạp driver — ghi tất cả (ít sự kiện, giá trị cao cho G2) -->
+    <RuleGroup name="DriverLoad" groupRelation="or">
+      <DriverLoad onmatch="exclude" />
+    </RuleGroup>
+
+    <!-- Event 7: nạp DLL — tắt (quá ồn). Bật lại nếu cần đo v3 in-memory:
+         <ImageLoad onmatch="include"><ImageLoaded condition="end with">\amsi.dll</ImageLoaded></ImageLoad> -->
+    <RuleGroup name="ImageLoad" groupRelation="or">
+      <ImageLoad onmatch="include">
+        <ImageLoaded condition="end with">\amsi.dll</ImageLoaded>
+        <ImageLoaded condition="end with">\clr.dll</ImageLoaded>
+        <ImageLoaded condition="contains">\payloads\</ImageLoaded>
+      </ImageLoad>
+    </RuleGroup>
+
+    <!-- Event 8: CreateRemoteThread (injection) -->
+    <RuleGroup name="CreateRemoteThread" groupRelation="or">
+      <CreateRemoteThread onmatch="exclude" />
+    </RuleGroup>
+
+    <!-- Event 10: truy cập tiến trình — LSASS (G3 Credential Access, T1003.001) -->
+    <RuleGroup name="ProcessAccess" groupRelation="or">
+      <ProcessAccess onmatch="include">
+        <TargetImage condition="end with">\lsass.exe</TargetImage>
+      </ProcessAccess>
+    </RuleGroup>
+
+    <!-- Event 11: tạo file — file thực thi/script + thư mục Startup + thư mục payload -->
+    <RuleGroup name="FileCreate" groupRelation="or">
+      <FileCreate onmatch="include">
+        <TargetFilename condition="end with">.exe</TargetFilename>
+        <TargetFilename condition="end with">.dll</TargetFilename>
+        <TargetFilename condition="end with">.ps1</TargetFilename>
+        <TargetFilename condition="end with">.bat</TargetFilename>
+        <TargetFilename condition="end with">.cmd</TargetFilename>
+        <TargetFilename condition="end with">.vbs</TargetFilename>
+        <TargetFilename condition="end with">.js</TargetFilename>
+        <TargetFilename condition="end with">.hta</TargetFilename>
+        <TargetFilename condition="end with">.lnk</TargetFilename>
+        <TargetFilename condition="contains">\Start Menu\Programs\Startup\</TargetFilename>
+        <TargetFilename condition="contains">\payloads\</TargetFilename>
+      </FileCreate>
+    </RuleGroup>
+
+    <!-- Event 12/13/14: registry — các vị trí persistence + tắt/sửa Defender (G2, G4) -->
+    <RuleGroup name="RegistryEvent" groupRelation="or">
+      <RegistryEvent onmatch="include">
+        <TargetObject condition="contains">\CurrentVersion\Run</TargetObject>
+        <TargetObject condition="contains">\CurrentVersion\RunOnce</TargetObject>
+        <TargetObject condition="contains">\Winlogon\</TargetObject>
+        <TargetObject condition="contains">\Image File Execution Options\</TargetObject>
+        <TargetObject condition="contains">\Windows Defender\</TargetObject>
+        <TargetObject condition="contains">\Microsoft\Windows Defender</TargetObject>
+        <TargetObject condition="contains">\Policies\Microsoft\Windows Defender</TargetObject>
+        <TargetObject condition="contains">\Services\</TargetObject>
+      </RegistryEvent>
+    </RuleGroup>
+
+    <!-- Event 15: luồng dữ liệu thay thế (ADS) / Mark-of-the-Web -->
+    <RuleGroup name="FileCreateStreamHash" groupRelation="or">
+      <FileCreateStreamHash onmatch="include">
+        <TargetFilename condition="end with">.exe</TargetFilename>
+        <TargetFilename condition="end with">.dll</TargetFilename>
+        <TargetFilename condition="end with">.ps1</TargetFilename>
+      </FileCreateStreamHash>
+    </RuleGroup>
+
+    <!-- Event 17/18: named pipe — chỉ các pipe đáng ngờ phổ biến -->
+    <RuleGroup name="PipeEvent" groupRelation="or">
+      <PipeEvent onmatch="include">
+        <PipeName condition="contains">msagent_</PipeName>
+        <PipeName condition="contains">postex_</PipeName>
+        <PipeName condition="contains">status_</PipeName>
+      </PipeEvent>
+    </RuleGroup>
+
+    <!-- Event 19/20/21: WMI (persistence qua WMI subscription, T1546.003) -->
+    <RuleGroup name="WmiEvent" groupRelation="or">
+      <WmiEvent onmatch="exclude" />
+    </RuleGroup>
+
+    <!-- Event 22: DNS query — từ các tiến trình bị lạm dụng -->
+    <RuleGroup name="DnsQuery" groupRelation="or">
+      <DnsQuery onmatch="include">
+        <Image condition="end with">\powershell.exe</Image>
+        <Image condition="end with">\mshta.exe</Image>
+        <Image condition="end with">\certutil.exe</Image>
+        <Image condition="end with">\regsvr32.exe</Image>
+        <Image condition="end with">\rundll32.exe</Image>
+        <Image condition="contains">\payloads\</Image>
+      </DnsQuery>
+    </RuleGroup>
+
+    <!-- Event 26: phát hiện xoá file (không lưu bản sao, nên không tốn đĩa) -->
+    <RuleGroup name="FileDeleteDetected" groupRelation="or">
+      <FileDeleteDetected onmatch="include">
+        <TargetFilename condition="end with">.exe</TargetFilename>
+        <TargetFilename condition="end with">.dll</TargetFilename>
+        <TargetFilename condition="end with">.ps1</TargetFilename>
+        <TargetFilename condition="contains">\payloads\</TargetFilename>
+      </FileDeleteDetected>
+    </RuleGroup>
+
+    <!-- Event 25: process tampering (hollowing / herpaderping) -->
+    <RuleGroup name="ProcessTampering" groupRelation="or">
+      <ProcessTampering onmatch="exclude" />
+    </RuleGroup>
+
+  </EventFiltering>
+</Sysmon>
