@@ -1,4 +1,4 @@
-"""Unit test cho db/db_writer.py (M8). Chạy từ thư mục gốc repo."""
+"""Unit tests for db/db_writer.py (M8). Run from the repo root directory."""
 import json
 import os
 import shutil

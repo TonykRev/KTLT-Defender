@@ -1,24 +1,24 @@
-# Work-packet M5 — Log collector
+# Work Packet M5 — Log Collector
 
-**Worker:** Sonnet. **Review:** Opus. **File:** `collect/log_collector.py` (stub + dataclass đã có).
+**Worker:** Sonnet. **Review:** Opus. **File:** `collect/log_collector.py` (stub + dataclass already exist).
 
-## Mục tiêu
-Với cửa sổ thời gian `[start_iso, end_iso]`, trả về list `EvidenceEvent` từ Defender + Sysmon.
-Đây là NGUỒN BẰNG CHỨNG độc lập với việc payload "báo thành công" — điểm mạnh khách quan.
+## Goal
+Given the time window `[start_iso, end_iso]`, return a list of `EvidenceEvent` from Defender + Sysmon.
+This is an INDEPENDENT source of EVIDENCE, separate from whether the payload "reports success" — an objective strength.
 
-## Cách làm
-- Dùng `common.run_powershell` gọi `Get-WinEvent -FilterHashtable @{LogName=...; StartTime=...; EndTime=...}`.
-  Lấy `Id, TimeCreated, Message`; xuất `ConvertTo-Json`. Parse về `EvidenceEvent`.
-- LogName từ `cfg['evidence']['defender_log']` / `['sysmon_log']`.
-- Chuyển ISO <-> `[datetime]` cho PowerShell đúng múi giờ (so khớp UTC trong code).
-- Sysmon có thể CHƯA cài → `collect_sysmon_events` trả `[]` (bắt lỗi "No events"/log không tồn tại), KHÔNG raise.
+## Approach
+- Use `common.run_powershell` to call `Get-WinEvent -FilterHashtable @{LogName=...; StartTime=...; EndTime=...}`.
+  Retrieve `Id, TimeCreated, Message`; export with `ConvertTo-Json`. Parse into `EvidenceEvent`.
+- LogName comes from `cfg['evidence']['defender_log']` / `['sysmon_log']`.
+- Convert ISO <-> `[datetime]` for PowerShell with the correct timezone (compare in UTC in code).
+- Sysmon may NOT be installed → `collect_sysmon_events` returns `[]` (catch "No events" / missing-log errors); it must NOT raise.
 
 ## Acceptance
-- `collect_defender_events(start,end,cfg)` chạy thật trên máy dev, trả list (có thể rỗng) không lỗi.
-- Lọc đúng cửa sổ thời gian (không lấy sự kiện ngoài khoảng).
-- Có `tests/test_log_collector.py`: tạo 1 event giả bằng `eventcreate`/ghi test, hoặc mock subprocess,
-  khẳng định parse đúng Id/Time/Message.
-- Không phụ thuộc pywin32 — chỉ PowerShell qua subprocess.
+- `collect_defender_events(start,end,cfg)` runs for real on the dev machine and returns a list (possibly empty) without error.
+- Filters the time window correctly (no events outside the range).
+- Has `tests/test_log_collector.py`: creates 1 fake event via `eventcreate`/test write, or mocks subprocess,
+  and asserts Id/Time/Message are parsed correctly.
+- No dependency on pywin32 — only PowerShell via subprocess.
 
 ## Edge cases
-Log rỗng, JSON trả 1 object (không phải list) khi chỉ 1 event, ký tự Unicode trong Message, timeout.
+Empty log; JSON returning a single object (not a list) when there is only 1 event; Unicode characters in Message; timeout.

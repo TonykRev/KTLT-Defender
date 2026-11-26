@@ -1,58 +1,58 @@
-# CLAUDE.md — Bộ nhớ dự án (đọc đầu mỗi session)
+# CLAUDE.md — Project Memory (read at the start of every session)
 
-> **LUÔN đọc `docs/PLAN.md` + `docs/SAFETY.md` TRƯỚC KHI LÀM bất cứ việc gì.**
-> File này ngắn gọn, cập nhật mỗi khi chốt điều quan trọng hoặc đóng băng tiến độ.
+> **ALWAYS read `docs/PLAN.md` + `docs/SAFETY.md` BEFORE doing anything.**
+> This file is kept brief and is updated whenever an important decision is locked in or progress is frozen.
 
-## 🎯 Mục tiêu đề tài
-Xây dựng **công cụ tự động đánh giá khả năng phát hiện tấn công của Windows Defender trên Windows 11**,
-và **xây dựng bộ luật phát hiện bổ sung** (YARA/Sigma) cho những mẫu Defender bỏ lọt.
-Môn KTLT — Học viện Kỹ thuật Mật mã. Nhóm 4 người (Trần Quang Huy + 3). GVHD: Thầy Nguyễn Mạnh Thắng.
-Repo public: https://github.com/TonykRev/KTLT-Defender
+## 🎯 Project goal
+Build an **automated tool to evaluate the attack-detection capability of Windows Defender on Windows 11**,
+and **build a supplementary detection rule set** (YARA/Sigma) for the samples Defender misses.
+KTLT course — Academy of Cryptography Techniques (Học viện Kỹ thuật Mật mã). Team of 4 (Trần Quang Huy + 3 others). Supervisor: Nguyễn Mạnh Thắng.
+Public repo: https://github.com/TonykRev/KTLT-Defender
 
-## 🧭 Cách làm việc (đã chốt)
-- **Opus = lead/điều phối**: kiến trúc, contract, phần lõi (scorer, fidelity, run_measure, reset), review, tích hợp, báo cáo.
-- **Subagent Sonnet/Haiku = worker** code module theo đặc tả. **KHÔNG dùng opencode/DeepSeek.**
-- ⑤ Khi điều phối subagent: subagent **không đọc được hội thoại**, chỉ đọc file mình chỉ → luôn nói rõ
-  *"làm theo spec trong `docs/specs/Mx-….md`"* và nêu file input/output cụ thể.
+## 🧭 Working method (locked in)
+- **Opus = lead/orchestrator**: architecture, contracts, core parts (scorer, fidelity, run_measure, reset), review, integration, report.
+- **Sonnet/Haiku subagents = workers** that code modules per spec. **DO NOT use opencode/DeepSeek.**
+- ⑤ When dispatching subagents: subagents **cannot read the conversation**, they only read the files they are pointed to → always state clearly
+  *"follow the spec in `docs/specs/Mx-….md`"* and name the specific input/output files.
 
-## 🔬 Thiết kế đo (đã chốt)
-- **2 trục:** Trục A = 4 biến thể payload C# (v0 trần, v1 mã hoá chuỗi, v2 disk-exec, v3 memory-exec);
-  Trục B = Invoke-AtomicRedTeam theo 5 nhóm **G1–G5** ánh xạ MITRE ATT&CK.
-- **4 trạng thái chấm điểm:** `error` / `inconclusive` / `detected` / `not_detected`.
-- **Bằng chứng:** log `Microsoft-Windows-Windows Defender/Operational` (event ID 1006/1015/1116/1117/1118/1119…) + Sysmon.
-- **Truy vết:** mỗi phép đo = SHA-256 mẫu + timestamp + phiên bản chữ ký Defender → bảng `runs`/`measurements`.
+## 🔬 Measurement design (locked in)
+- **2 axes:** Axis A = 4 C# payload variants (v0 bare, v1 string-encoded, v2 disk-exec, v3 memory-exec);
+  Axis B = Invoke-AtomicRedTeam across 5 groups **G1–G5** mapped to MITRE ATT&CK.
+- **4 scoring states:** `error` / `inconclusive` / `detected` / `not_detected`.
+- **Evidence:** `Microsoft-Windows-Windows Defender/Operational` log (event IDs 1006/1015/1116/1117/1118/1119…) + Sysmon.
+- **Traceability:** each measurement = sample SHA-256 + timestamp + Defender signature version → `runs`/`measurements` tables.
 
-## 🧱 Quy ước code
-- **Python 3.12**, chỉ dùng chuẩn + `pyyaml`. **Test bằng `unittest`** (không pytest): `python -m unittest`.
-- Tương tác Windows (Get-WinEvent, csc, MpCmdRun) gọi qua `common.run_powershell()`; **mọi SQL tham số hoá**.
-- **state** phải ∈ `{error, inconclusive, detected, not_detected}` (db_writer assert).
-- **EICAR mã hoá XOR(0x5A)+Base64 trong source** → repo & binaries sạch (Defender không cờ source/clone).
-  Chỉ khi *chạy* v0/v2 mới thả EICAR trần ra đĩa → Defender phản ứng = chính phép đo.
-- Compile bằng **csc.exe .NET Framework v4.0.30319** (không cần Visual Studio / .NET SDK).
-- Git identity local: `KTLT Defender Dev <dev@localhost>`. Commit theo phase/wave, mô tả tiếng Việt.
+## 🧱 Code conventions
+- **Python 3.12**, standard library + `pyyaml` only. **Tests with `unittest`** (not pytest): `python -m unittest`.
+- Windows interactions (Get-WinEvent, csc, MpCmdRun) are invoked via `common.run_powershell()`; **all SQL must be parameterized**.
+- **state** must be ∈ `{error, inconclusive, detected, not_detected}` (db_writer asserts this).
+- **EICAR is encoded as XOR(0x5A)+Base64 in source** → repo & binaries stay clean (Defender raises no flag on the source/clone).
+  Only when *running* v0/v2 is plain EICAR dropped to disk → Defender's reaction is the measurement itself.
+- Compile with **csc.exe .NET Framework v4.0.30319** (no Visual Studio / .NET SDK needed).
+- Local git identity: `KTLT Defender Dev <dev@localhost>`. Commit per phase/wave, with English commit descriptions.
 
-## 🛡️ Ranh giới an toàn (xem đủ ở `docs/SAFETY.md`)
-`config.yaml → environment.machine_label` điều khiển khoá an toàn:
-- **🟢 `dev-win11` (máy này, mặc định):** CHỈ build, smoke test, quét tĩnh (MpCmdRun), tối đa 1–2 Atomic
-  discovery vô hại (T1082/T1057). `atomic_runner` **CHẶN** mọi kỹ thuật xâm lấn; `reset.ps1` **KHÔNG** đụng Defender/log.
-- **🔴 `cloud-vm`:** nơi chạy kỹ thuật xâm lấn thật (LSASS T1003, tắt Defender T1562, persistence T1547/T1053, cred T1555)
-  và **mọi số liệu chính thức Chương 4**. VM cô lập mạng, có snapshot sạch.
+## 🛡️ Safety boundary (full details in `docs/SAFETY.md`)
+`config.yaml → environment.machine_label` controls the safety lock:
+- **🟢 `dev-win11` (this machine, default):** ONLY build, smoke test, static scan (MpCmdRun), and at most 1–2 harmless Atomic
+  discovery tests (T1082/T1057). `atomic_runner` **BLOCKS** all invasive techniques; `reset.ps1` **does NOT** touch Defender/logs.
+- **🔴 `cloud-vm`:** where real invasive techniques run (LSASS T1003, disabling Defender T1562, persistence T1547/T1053, cred T1555)
+  and **all official Chapter 4 measurements**. Network-isolated VM with a clean snapshot.
 
-## 📌 STATUS (cập nhật cuối mỗi phase)
-_Cập nhật: 2026-11-27_
-- ✅ **Phase 0** — Nền móng: schema + config + docs + đặc tả + git. Đã push GitHub.
-- ✅ **Phase 1** — Build song song (phần an toàn): `log_collector`(M5), `db_writer`(M8), `scorer`(M7),
-  `fidelity`(M6) + **21 unit test pass**; payloads v0–v3 + `build.ps1` (compile sạch 4608B); `atomic_runner`(M3)
-  có guard chặn xâm lấn; scenarios G1–G5 + `reset.ps1` có khoá dev/cloud.
-- ⏳ **Phase 2 (ĐANG TỚI)** — Tích hợp: **`run_measure.py`(M10) hiện CÒN STUB** → cần hiện thực vòng điều phối
-  (reset → build/arm → trigger → collect → score → ghi DB), rồi **smoke test end-to-end** trên máy dev
-  (chạy v0/v2 sẽ thả EICAR benign → Defender cách ly; cần user bật đèn xanh "Chạy luôn" trước khi chạy).
-- ⬜ **Phase 3** — Đo thật trên cloud VM (runbook + ma trận rút gọn).
-- ⬜ **Phase 4** — Luật YARA/Sigma(M11, `rules/`) + FP goodware + ASR + báo cáo(M12, `report/generate.py` còn stub) + bảng Chương 4.
+## 📌 STATUS (updated at the end of each phase)
+_Updated: 2026-11-27_
+- ✅ **Phase 0** — Foundation: schema + config + docs + specs + git. Pushed to GitHub.
+- ✅ **Phase 1** — Parallel build (safe part): `log_collector`(M5), `db_writer`(M8), `scorer`(M7),
+  `fidelity`(M6) + **21 unit tests pass**; payloads v0–v3 + `build.ps1` (clean compile, 4608 B); `atomic_runner`(M3)
+  with a guard that blocks invasive techniques; scenarios G1–G5 + `reset.ps1` with dev/cloud locks.
+- ⏳ **Phase 2 (CURRENT)** — Integration: **`run_measure.py`(M10) is still a STUB** → must implement the orchestration loop
+  (reset → build/arm → trigger → collect → score → write to DB), then run an **end-to-end smoke test** on the dev machine
+  (running v0/v2 drops a benign EICAR → Defender quarantines it; the user must give the green light "Run anyway" before running).
+- ⬜ **Phase 3** — Real measurement on the cloud VM (runbook + reduced matrix).
+- ⬜ **Phase 4** — YARA/Sigma rules (M11, `rules/`) + goodware FP + ASR + report (M12, `report/generate.py` is still a stub) + Chapter 4 tables.
 
-**Việc tiếp theo:** hiện thực `run_measure.py` (M10) rồi smoke test an toàn trên máy dev.
+**Next task:** implement `run_measure.py` (M10), then run a safe smoke test on the dev machine.
 
-## 🔁 Thói quen cập nhật file này
-- Chốt điều quan trọng → ghi vào mục tương ứng ngay.
-- Cuối buổi/phase → cập nhật mục **STATUS** (đã xong / đang dở / việc tiếp theo / lưu ý).
-- **Làm xong phase nào → commit + push GitHub luôn.**
+## 🔁 Habit for updating this file
+- Lock in an important decision → record it in the matching section right away.
+- End of session/phase → update the **STATUS** section (done / in progress / next task / notes).
+- **When a phase is finished → commit + push to GitHub right away.**

@@ -1,5 +1,5 @@
-// v1 — v0 + MÃ HOÁ CHUỖI: ghi mẫu vẫn ở dạng mã hoá (XOR+Base64) ra đĩa.
-// Đo: mã hoá chuỗi có qua được quét tĩnh không? (so với v0 chỉ khác đúng việc mã hoá)
+// v1 — v0 + STRING ENCODING: writes the sample still encoded (XOR+Base64) to disk.
+// Measures: does string encoding get past the static scan? (differs from v0 only by the encoding)
 using System.IO;
 
 namespace Payload
@@ -9,7 +9,7 @@ namespace Payload
         static void Main()
         {
             string path = Path.Combine(Common.ExeDir(), "sample_v1.bin");
-            File.WriteAllBytes(path, Common.Encoded());   // giữ MÃ HOÁ
+            File.WriteAllBytes(path, Common.Encoded());   // keep ENCODED
             Common.Marker("v1", "wrote ENCODED sample -> " + path);
         }
     }

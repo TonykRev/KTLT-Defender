@@ -1,8 +1,8 @@
 <!--
-  sysmon-config.xml — cấu hình Sysmon cho đề tài "Công cụ tự động đánh giá khả năng phát hiện của Windows Defender".
-  Nguyên tắc: ghi đủ bằng chứng cho 5 nhóm kịch bản (G1 Execution, G2 Defense Evasion,
-  G3 Credential Access, G4 Persistence, G5 Discovery/LOLBin) nhưng không ngập log.
-  Tự viết cho đề tài, không dựa trên config bên thứ ba.
+  sysmon-config.xml — Sysmon configuration for the project "Automated Evaluation Tool for Windows Defender Detection Capability".
+  Principle: record enough evidence for the 5 scenario groups (G1 Execution, G2 Defense Evasion,
+  G3 Credential Access, G4 Persistence, G5 Discovery/LOLBin) without flooding the logs.
+  Written for this project; not based on third-party configs.
 -->
 <Sysmon schemaversion="4.90">
   <HashAlgorithms>sha256,imphash</HashAlgorithms>
@@ -10,19 +10,19 @@
 
   <EventFiltering>
 
-    <!-- Event 1: ProcessCreate — ghi TẤT CẢ (exclude rỗng) để truy vết chuỗi tiến trình -->
+    <!-- Event 1: ProcessCreate — log ALL (empty exclude) to trace process chains -->
     <RuleGroup name="ProcessCreate" groupRelation="or">
       <ProcessCreate onmatch="exclude">
         <Image condition="end with">\Sysmon64.exe</Image>
       </ProcessCreate>
     </RuleGroup>
 
-    <!-- Event 2: thay đổi thời gian tạo file (timestomping, T1070.006) -->
+    <!-- Event 2: file creation time changes (timestomping, T1070.006) -->
     <RuleGroup name="FileCreateTime" groupRelation="or">
       <FileCreateTime onmatch="exclude" />
     </RuleGroup>
 
-    <!-- Event 3: kết nối mạng — chỉ từ các tiến trình hay bị lạm dụng + thư mục payload -->
+    <!-- Event 3: network connections — only from commonly abused processes + the payload folder -->
     <RuleGroup name="NetworkConnect" groupRelation="or">
       <NetworkConnect onmatch="include">
         <Image condition="end with">\powershell.exe</Image>
@@ -39,17 +39,17 @@
       </NetworkConnect>
     </RuleGroup>
 
-    <!-- Event 5: tiến trình kết thúc — không cần -->
+    <!-- Event 5: process termination — not needed -->
     <RuleGroup name="ProcessTerminate" groupRelation="or">
       <ProcessTerminate onmatch="include" />
     </RuleGroup>
 
-    <!-- Event 6: nạp driver — ghi tất cả (ít sự kiện, giá trị cao cho G2) -->
+    <!-- Event 6: driver loading — log all (few events, high value for G2) -->
     <RuleGroup name="DriverLoad" groupRelation="or">
       <DriverLoad onmatch="exclude" />
     </RuleGroup>
 
-    <!-- Event 7: nạp DLL — tắt (quá ồn). Bật lại nếu cần đo v3 in-memory:
+    <!-- Event 7: DLL loading — disabled (too noisy). Re-enable if needed to measure v3 in-memory:
          <ImageLoad onmatch="include"><ImageLoaded condition="end with">\amsi.dll</ImageLoaded></ImageLoad> -->
     <RuleGroup name="ImageLoad" groupRelation="or">
       <ImageLoad onmatch="include">
@@ -64,14 +64,14 @@
       <CreateRemoteThread onmatch="exclude" />
     </RuleGroup>
 
-    <!-- Event 10: truy cập tiến trình — LSASS (G3 Credential Access, T1003.001) -->
+    <!-- Event 10: process access — LSASS (G3 Credential Access, T1003.001) -->
     <RuleGroup name="ProcessAccess" groupRelation="or">
       <ProcessAccess onmatch="include">
         <TargetImage condition="end with">\lsass.exe</TargetImage>
       </ProcessAccess>
     </RuleGroup>
 
-    <!-- Event 11: tạo file — file thực thi/script + thư mục Startup + thư mục payload -->
+    <!-- Event 11: file creation — executables/scripts + Startup folder + payload folder -->
     <RuleGroup name="FileCreate" groupRelation="or">
       <FileCreate onmatch="include">
         <TargetFilename condition="end with">.exe</TargetFilename>
@@ -88,7 +88,7 @@
       </FileCreate>
     </RuleGroup>
 
-    <!-- Event 12/13/14: registry — các vị trí persistence + tắt/sửa Defender (G2, G4) -->
+    <!-- Event 12/13/14: registry — persistence locations + disabling/modifying Defender (G2, G4) -->
     <RuleGroup name="RegistryEvent" groupRelation="or">
       <RegistryEvent onmatch="include">
         <TargetObject condition="contains">\CurrentVersion\Run</TargetObject>
@@ -102,7 +102,7 @@
       </RegistryEvent>
     </RuleGroup>
 
-    <!-- Event 15: luồng dữ liệu thay thế (ADS) / Mark-of-the-Web -->
+    <!-- Event 15: alternate data streams (ADS) / Mark-of-the-Web -->
     <RuleGroup name="FileCreateStreamHash" groupRelation="or">
       <FileCreateStreamHash onmatch="include">
         <TargetFilename condition="end with">.exe</TargetFilename>
@@ -111,7 +111,7 @@
       </FileCreateStreamHash>
     </RuleGroup>
 
-    <!-- Event 17/18: named pipe — chỉ các pipe đáng ngờ phổ biến -->
+    <!-- Event 17/18: named pipes — only common suspicious pipes -->
     <RuleGroup name="PipeEvent" groupRelation="or">
       <PipeEvent onmatch="include">
         <PipeName condition="contains">msagent_</PipeName>
@@ -120,12 +120,12 @@
       </PipeEvent>
     </RuleGroup>
 
-    <!-- Event 19/20/21: WMI (persistence qua WMI subscription, T1546.003) -->
+    <!-- Event 19/20/21: WMI (persistence via WMI subscription, T1546.003) -->
     <RuleGroup name="WmiEvent" groupRelation="or">
       <WmiEvent onmatch="exclude" />
     </RuleGroup>
 
-    <!-- Event 22: DNS query — từ các tiến trình bị lạm dụng -->
+    <!-- Event 22: DNS queries — from commonly abused processes -->
     <RuleGroup name="DnsQuery" groupRelation="or">
       <DnsQuery onmatch="include">
         <Image condition="end with">\powershell.exe</Image>
@@ -137,7 +137,7 @@
       </DnsQuery>
     </RuleGroup>
 
-    <!-- Event 26: phát hiện xoá file (không lưu bản sao, nên không tốn đĩa) -->
+    <!-- Event 26: file delete detected (no copy stored, so no disk cost) -->
     <RuleGroup name="FileDeleteDetected" groupRelation="or">
       <FileDeleteDetected onmatch="include">
         <TargetFilename condition="end with">.exe</TargetFilename>

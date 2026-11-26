@@ -1,6 +1,6 @@
-"""Unit test cho score/scorer.py + score/fidelity.py (Chủ: Opus).
-Dùng stand-in cho evidence event (duck-typing) để test độc lập với log_collector.
-Chạy từ repo root:  python -m unittest tests.test_scorer -v
+"""Unit tests for score/scorer.py + score/fidelity.py (Owner: Opus).
+Use a stand-in for evidence events (duck-typing) to test independently of log_collector.
+Run from repo root:  python -m unittest tests.test_scorer -v
 """
 import unittest
 from types import SimpleNamespace

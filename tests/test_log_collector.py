@@ -43,13 +43,13 @@ class Mocked(unittest.TestCase):
             return fn(START, END, CFG)
 
     def test_single_object(self):
-        out = json.dumps({"Id": 1116, "TimeCreated": "2026-01-01T00:05:00.0000000Z", "Message": "Threat: Tiếng Việt"})
+        out = json.dumps({"Id": 1116, "TimeCreated": "2026-01-01T00:05:00.0000000Z", "Message": "Threat: Ünïcödé"})
         r = self.run_with(out)
         self.assertEqual(len(r), 1)
         e = r[0]
         self.assertEqual((e.source, e.event_id), ("defender", 1116))
         self.assertEqual(e.time_created, "2026-01-01T00:05:00.0000000Z")
-        self.assertIn("Tiếng Việt", e.message)
+        self.assertIn("Ünïcödé", e.message)
         self.assertEqual(e.raw["Id"], 1116)
 
     def test_array(self):

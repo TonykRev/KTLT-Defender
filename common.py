@@ -1,6 +1,6 @@
 """
-common.py — Helper dùng chung cho toàn công cụ (Chủ: Opus, đã implement).
-Giữ phụ thuộc tối thiểu: chỉ pyyaml. Đọc Event Log dùng PowerShell qua subprocess.
+common.py — Shared helpers for the whole tool (Owner: Opus, already implemented).
+Keeps dependencies minimal: only pyyaml. Reads the Event Log via PowerShell through subprocess.
 """
 from __future__ import annotations
 import hashlib
@@ -12,25 +12,25 @@ from pathlib import Path
 
 try:
     import yaml
-except ImportError:  # thông báo rõ nếu thiếu dep
+except ImportError:  # clear message if the dependency is missing
     yaml = None
 
 
 def load_config(path: str = "config.yaml") -> dict:
-    """Đọc config.yaml -> dict."""
+    """Read config.yaml -> dict."""
     if yaml is None:
-        raise RuntimeError("Thiếu pyyaml. Chạy: pip install pyyaml")
+        raise RuntimeError("Missing pyyaml. Run: pip install pyyaml")
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
 def utcnow_iso() -> str:
-    """Mốc thời gian ISO8601 UTC (dùng thống nhất cho mọi bản ghi)."""
+    """ISO8601 UTC timestamp (used uniformly for all records)."""
     return datetime.now(timezone.utc).isoformat()
 
 
 def sha256_file(path: str | Path) -> str:
-    """Băm SHA-256 của một file (để truy vết mẫu)."""
+    """SHA-256 hash of a file (for sample traceability)."""
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(65536), b""):
@@ -40,8 +40,8 @@ def sha256_file(path: str | Path) -> str:
 
 def run_powershell(script: str, timeout: int = 120) -> subprocess.CompletedProcess:
     """
-    Chạy một đoạn PowerShell, trả CompletedProcess (stdout/stderr/returncode).
-    Dùng cho: Get-MpComputerStatus, Get-WinEvent, MpCmdRun, reset.ps1 ...
+    Run a PowerShell snippet and return a CompletedProcess (stdout/stderr/returncode).
+    Used for: Get-MpComputerStatus, Get-WinEvent, MpCmdRun, reset.ps1 ...
     """
     return subprocess.run(
         ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
@@ -50,7 +50,7 @@ def run_powershell(script: str, timeout: int = 120) -> subprocess.CompletedProce
 
 
 def ps_json(script: str, timeout: int = 120):
-    """Chạy PowerShell có `ConvertTo-Json` ở cuối và parse về object Python."""
+    """Run PowerShell that ends with `ConvertTo-Json` and parse the output into a Python object."""
     cp = run_powershell(script, timeout=timeout)
     out = (cp.stdout or "").strip()
     if not out:
@@ -59,7 +59,7 @@ def ps_json(script: str, timeout: int = 120):
 
 
 def get_defender_status() -> dict:
-    """Lấy phiên bản engine/chữ ký + trạng thái realtime của Defender (ghi vào bảng runs)."""
+    """Get Defender engine/signature version and realtime status (written to the runs table)."""
     data = ps_json(
         "Get-MpComputerStatus | "
         "Select-Object AMEngineVersion,AntivirusSignatureVersion,"
@@ -70,6 +70,6 @@ def get_defender_status() -> dict:
 
 
 def find_mpcmdrun(pattern: str) -> str | None:
-    """Dò MpCmdRun.exe (thư mục Platform có version thay đổi)."""
+    """Locate MpCmdRun.exe (the Platform folder has a changing version)."""
     hits = sorted(glob.glob(pattern))
     return hits[-1] if hits else None

@@ -1,11 +1,11 @@
 """
-M5 — Log collector. Đặc tả: docs/specs/M5-log_collector.md
+M5 — Log collector. Specification: docs/specs/M5-log_collector.md
 
-Với một CỬA SỔ THỜI GIAN [start, end] (ISO8601, UTC) trả về các sự kiện bằng chứng từ
+Given a TIME WINDOW [start, end] (ISO8601, UTC), returns evidence events from
   (a) Microsoft-Windows-Windows Defender/Operational
-  (b) Microsoft-Windows-Sysmon/Operational (nếu có)
-Dùng PowerShell Get-WinEvent (FilterHashtable StartTime/EndTime) qua common.run_powershell.
-KHÔNG tự chấm điểm — chỉ trả bằng chứng thô cho scorer. Không bao giờ raise khi thu log.
+  (b) Microsoft-Windows-Sysmon/Operational (if present)
+Uses PowerShell Get-WinEvent (FilterHashtable StartTime/EndTime) via common.run_powershell.
+Does NOT score anything — only returns raw evidence for the scorer. Never raises when collecting logs.
 """
 from __future__ import annotations
 import json
@@ -26,7 +26,7 @@ class EvidenceEvent:
 
 
 def _norm_iso(iso: str) -> str:
-    """Chuẩn hoá ISO8601 về UTC ('Z'); chuỗi không có múi giờ coi là UTC."""
+    """Normalize ISO8601 to UTC ('Z'); strings without a timezone are treated as UTC."""
     s = str(iso).strip()
     if s.endswith(("Z", "z")):
         s = s[:-1] + "+00:00"
@@ -37,7 +37,7 @@ def _norm_iso(iso: str) -> str:
 
 
 def _build_script(log_name: str, start_iso: str, end_iso: str) -> str:
-    """PowerShell: lọc theo cửa sổ (đổi UTC -> giờ local cho FilterHashtable), xuất JSON ASCII-an-toàn."""
+    """PowerShell: filter by the window (convert UTC -> local time for FilterHashtable), export ASCII-safe JSON."""
     log = log_name.replace("'", "''")
     s = _norm_iso(start_iso)
     e = _norm_iso(end_iso)
@@ -51,7 +51,7 @@ def _build_script(log_name: str, start_iso: str, end_iso: str) -> str:
         "@{n='TimeCreated';e={$_.TimeCreated.ToUniversalTime().ToString('o')}},Message); "
         "if ($ev.Count -eq 0) { '[]' } else { "
         "$j=ConvertTo-Json -InputObject $ev -Compress -Depth 4; "
-        # Escape ký tự non-ASCII để không phụ thuộc code page của stdout.
+        # Escape non-ASCII characters so the result does not depend on the stdout code page.
         r"[regex]::Replace($j,'[^\x00-\x7F]',{param($m) '\u{0:x4}' -f [int][char]$m.Value}) }"
     )
 
@@ -66,7 +66,7 @@ def _parse(stdout: str, source: str) -> list[EvidenceEvent]:
         return []
     if data is None:
         return []
-    if isinstance(data, dict):  # 1 event -> object thay vì list
+    if isinstance(data, dict):  # 1 event -> object instead of list
         data = [data]
     if not isinstance(data, list):
         return []
@@ -97,23 +97,23 @@ def _collect(log_name, source: str, start_iso: str, end_iso: str) -> list[Eviden
         return _parse(getattr(cp, "stdout", ""), source)
     except (subprocess.TimeoutExpired, OSError, ValueError):
         return []
-    except Exception:  # bằng chứng không được làm sập pipeline đo
+    except Exception:  # evidence collection must not crash the measurement pipeline
         return []
 
 
 def collect_defender_events(start_iso: str, end_iso: str, cfg: dict) -> list[EvidenceEvent]:
-    """Trả về sự kiện Defender trong [start, end]."""
+    """Return Defender events within [start, end]."""
     log = (cfg.get("evidence") or {}).get("defender_log")
     return _collect(log, "defender", start_iso, end_iso)
 
 
 def collect_sysmon_events(start_iso: str, end_iso: str, cfg: dict) -> list[EvidenceEvent]:
-    """Trả về sự kiện Sysmon trong [start, end] (rỗng nếu chưa cài)."""
+    """Return Sysmon events within [start, end] (empty if not installed)."""
     log = (cfg.get("evidence") or {}).get("sysmon_log")
     return _collect(log, "sysmon", start_iso, end_iso)
 
 
 def collect_all(start_iso: str, end_iso: str, cfg: dict) -> list[EvidenceEvent]:
-    """Gộp Defender + Sysmon, sắp theo thời gian."""
+    """Merge Defender + Sysmon events, sorted by time."""
     evs = collect_defender_events(start_iso, end_iso, cfg) + collect_sysmon_events(start_iso, end_iso, cfg)
     return sorted(evs, key=lambda x: x.time_created)

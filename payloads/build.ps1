@@ -1,8 +1,8 @@
-# M2 — Build 4 biến thể payload C# bằng csc.exe (Chủ: Opus).
-# 1 lệnh -> payloads/out/v0..v3.exe + in JSON [{variant, path, sha256, size}].
+# M2 — Build the 4 C# payload variants with csc.exe (Owner: Opus).
+# One command -> payloads/out/v0..v3.exe + prints JSON [{variant, path, sha256, size}].
 #
-# AN TOÀN: binary chỉ chứa EICAR DẠNG MÃ HOÁ -> biên dịch & lưu trữ an toàn trên máy dev.
-# Chỉ khi CHẠY v0/v2 mới thả EICAR thô ra đĩa (Defender RTP sẽ cách ly — đó là phép đo).
+# SAFETY: the binaries contain only the ENCODED EICAR -> compiling & storing them is safe on the dev machine.
+# Only RUNNING v0/v2 drops the raw EICAR to disk (Defender RTP will quarantine it — that is the measurement).
 param(
     [string]$OutDir = "payloads/out",
     [string]$Csc = "C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe"

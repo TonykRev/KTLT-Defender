@@ -1,7 +1,7 @@
-// PayloadCommon.cs — helper dùng chung cho v0..v3 (Chủ: Opus).
-// EICAR được lưu DẠNG MÃ HOÁ (XOR 0x5A + Base64). Repo & binary KHÔNG chứa chuỗi EICAR thô
-// => clone repo không bị AV báo động; biên dịch .exe an toàn trên máy dev.
-// Chỉ khi CHẠY v0/v2 mới ghi EICAR thô ra đĩa -> đó chính là phép đo.
+// PayloadCommon.cs — shared helper for v0..v3 (Owner: Opus).
+// EICAR is stored ENCODED (XOR 0x5A + Base64). The repo & binaries do NOT contain the raw EICAR string
+// => cloning the repo does not trigger AV alerts; compiling the .exe is safe on the dev machine.
+// Only RUNNING v0/v2 writes the raw EICAR to disk -> that is the measurement.
 using System;
 using System.IO;
 using System.Reflection;
@@ -10,7 +10,7 @@ namespace Payload
 {
     static class Common
     {
-        // XOR(0x5A)+Base64 của chuỗi test chuẩn EICAR (vô hại). Sinh bằng Python, round-trip đã kiểm.
+        // XOR(0x5A)+Base64 of the standard EICAR test string (harmless). Generated in Python, round-trip verified.
         public const string ENC = "Am8Vewp/GhsKAW4GCgACb25yCgRzbRkZc20nfh8TGRsIdwkOGxQeGwgedxsUDhMMEwgPCXcOHwkOdxwTFh97fhJxEnA=";
         public const byte KEY = 0x5A;
 
@@ -24,7 +24,7 @@ namespace Payload
             byte[] e = Encoded();
             byte[] d = new byte[e.Length];
             for (int i = 0; i < e.Length; i++) d[i] = (byte)(e[i] ^ KEY);
-            return d;   // = chuỗi EICAR thô, chỉ tồn tại lúc chạy
+            return d;   // = raw EICAR string, exists only at runtime
         }
 
         public static string ExeDir()

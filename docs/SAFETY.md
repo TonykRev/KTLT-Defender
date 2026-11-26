@@ -1,29 +1,28 @@
-# Ranh giới an toàn & phạm vi (ĐỌC TRƯỚC KHI CHẠY)
+# Safety Boundary & Scope (READ BEFORE RUNNING)
 
-Dự án này kích hoạt các kỹ thuật tấn công đã chuẩn hoá (Invoke-AtomicRedTeam) **chỉ để đo** xem Defender
-có phát hiện không. Payload tự viết là **vô hại** (benign) — chỉ mang chuỗi/hành vi "trông giống mã độc"
-để đo tầng quét, không gây hại thật.
+This project triggers standardized attack techniques (Invoke-AtomicRedTeam) **only for measurement**, to see whether Defender
+detects them. Self-written payloads are **harmless** (benign) — they carry only strings/behavior that "look like malware"
+so the scanning layer can be measured, and they do not cause real harm.
 
-## Hai môi trường — tách rạch ròi
+## Two environments — strictly separated
 
-### 🟢 Máy DEV (Windows 11 cá nhân này) — CHỈ:
-- Viết code, compile 4 payload C#, viết luật YARA/Sigma.
-- **Smoke test**: code chạy được, parse log thật được, ghi DB được, chấm điểm đúng.
-- **Trục đo tĩnh**: quét file payload bằng MpCmdRun (vô hại — chỉ quét file trên đĩa).
-- (Tuỳ chọn) 1–2 Atomic discovery vô hại (T1082, T1057) để test đường ống thu log.
+### 🟢 DEV machine (this personal Windows 11) — ONLY:
+- Write code, compile the 4 C# payloads, write YARA/Sigma rules.
+- **Smoke test**: code runs, real logs can be parsed, DB writes work, scoring is correct.
+- **Static measurement axis**: scan payload files with MpCmdRun (harmless — it only scans files on disk).
+- (Optional) 1–2 harmless Atomic discovery tests (T1082, T1057) to test the log collection pipeline.
 
-### 🔴 KHÔNG chạy trên máy DEV — để dành CLOUD VM:
-- Kỹ thuật xâm lấn thật: dump LSASS (T1003), tắt Defender/tool (T1562), AMSI bypass,
+### 🔴 NOT to run on the DEV machine — reserved for the CLOUD VM:
+- Real invasive techniques: LSASS dump (T1003), disabling Defender/tools (T1562), AMSI bypass,
   persistence (Run key / scheduled task — T1547, T1053), credential access (T1555).
-- Lý do: (a) bị Defender chặn/cách ly gây gián đoạn dev; (b) **sửa đổi thật** registry/dịch vụ
-  trên máy chính; (c) làm bẩn số liệu đo.
+- Reasons: (a) Defender blocking/quarantining disrupts development; (b) **real modifications** to the registry/services of the main machine; (c) they contaminate the measurement data.
 
-## Nguyên tắc vàng
-**Mọi SỐ LIỆU CHÍNH THỨC cho Chương 4 đều lấy trên CLOUD VM** — môi trường cô lập mạng,
-khoá phiên bản Defender, có snapshot "sạch" để khôi phục. Máy dev chỉ để *build cho chắc tay*.
+## Golden rule
+**All OFFICIAL NUMBERS for Chapter 4 are taken on the CLOUD VM** — a network-isolated environment with
+a pinned Defender version and a clean snapshot to restore. The dev machine is only for *building carefully*.
 
-## Khi chạy trên cloud VM
-- Cô lập mạng VM (không để lan ra ngoài).
-- `machine_label: cloud-vm` trong config; ghi lại phiên bản chữ ký Defender vào bảng `runs`.
-- Snapshot "sạch" trước khi đo; soft-reset giữa các lần; snapshot full khi môi trường hỏng.
-- Dọn mẫu + quarantine sau mỗi lần đo.
+## When running on the cloud VM
+- Network-isolate the VM (do not let it spread outward).
+- `machine_label: cloud-vm` in config; record the Defender signature version in the `runs` table.
+- Clean snapshot before measuring; soft-reset between runs; full snapshot restore when the environment breaks.
+- Clean up samples + quarantine after each measurement.

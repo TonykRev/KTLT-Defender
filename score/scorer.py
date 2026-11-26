@@ -1,24 +1,24 @@
 """
-M7 — Scorer: map BẰNG CHỨNG -> 1 trong 4 TRẠNG THÁI (Chủ: Opus — phần lõi khoa học).
+M7 — Scorer: map EVIDENCE -> 1 of 4 STATES (Owner: Opus — the scientific core).
 
-4 trạng thái (Chương 2):
-  error         : phép đo lỗi (reset/trigger/thu log thất bại) -> không tính
-  inconclusive  : phép đo không đủ tin cậy (fidelity thấp, hoặc thiếu bằng chứng)
-  detected      : có bằng chứng Defender phát hiện/chặn
-  not_detected  : kỹ thuật chạy (có dấu vết) nhưng Defender KHÔNG phát hiện
+4 states (Chapter 2):
+  error         : measurement failed (reset/trigger/log collection failed) -> not counted
+  inconclusive  : measurement not reliable enough (low fidelity, or missing evidence)
+  detected      : evidence that Defender detected/blocked the technique
+  not_detected  : technique ran (traces present) but Defender did NOT detect it
 
-`evidence` là list các object có thuộc tính: .source ('defender'|'sysmon'),
-.event_id (int), .time_created (ISO8601), .message (str). (Duck-typing — không
-ràng buộc vào log_collector để test độc lập được.)
+`evidence` is a list of objects with attributes: .source ('defender'|'sysmon'),
+.event_id (int), .time_created (ISO8601), .message (str). (Duck typing — not
+bound to log_collector, so it can be tested independently.)
 """
 from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-# --- Phân loại Event ID của Microsoft Defender Operational ---
-# Phát hiện theo chữ ký / quét (tầng tĩnh):
+# --- Event ID classification for Microsoft Defender Operational ---
+# Detection by signature / scan (static layer):
 SIGNATURE_EVENT_IDS = {1006, 1007, 1008, 1116, 1117, 1118}
-# Phát hiện theo giám sát hành vi:
+# Detection by behavior monitoring:
 BEHAVIOR_EVENT_IDS = {1015, 1119, 1120, 1121}
 DETECTION_EVENT_IDS = SIGNATURE_EVENT_IDS | BEHAVIOR_EVENT_IDS
 
@@ -56,7 +56,7 @@ def _evidence_source(evidence) -> str:
 
 
 def _infer_layer(det_events, axis) -> str:
-    """Suy tầng phát hiện từ loại event + nội dung (heuristic, có ghi chú ở báo cáo)."""
+    """Infer the detection layer from the event type and content (heuristic, noted in the report)."""
     msg = " ".join((getattr(e, "message", "") or "") for e in det_events).lower()
     if "amsi" in msg:
         return "amsi"
@@ -70,23 +70,23 @@ def score(evidence, *, trigger_started_iso, fidelity_valid, had_error,
           static_result, cfg=None, axis="behavior") -> ScoreResult:
     evidence = list(evidence or [])
 
-    # 1) lỗi phép đo -> không tính
+    # 1) measurement error -> not counted
     if had_error:
-        return ScoreResult("error", reason="phép đo lỗi (reset/trigger/thu log thất bại)")
+        return ScoreResult("error", reason="measurement failed (reset/trigger/log collection failed)")
 
-    # 2) không đủ tin cậy -> không kết luận
+    # 2) not reliable enough -> no conclusion
     if not fidelity_valid:
         return ScoreResult("inconclusive", evidence_source=_evidence_source(evidence),
-                           reason="fidelity dưới ngưỡng — phép đo không hợp lệ")
+                           reason="fidelity below threshold — measurement is not valid")
 
     src = _evidence_source(evidence)
 
-    # 3a) quét tĩnh bắt mẫu
+    # 3a) static scan caught the sample
     if static_result == "threat_found":
         return ScoreResult("detected", detection_layer="static", detect_latency_ms=0,
                            evidence_source=src, reason="MpCmdRun: threat_found")
 
-    # 3b) có sự kiện phát hiện của Defender
+    # 3b) Defender detection events are present
     det = [e for e in evidence
            if getattr(e, "source", None) == "defender" and e.event_id in DETECTION_EVENT_IDS]
     if det:
@@ -99,13 +99,13 @@ def score(evidence, *, trigger_started_iso, fidelity_valid, had_error,
                            detect_latency_ms=latency, evidence_source=src,
                            reason=f"Defender events {sorted({e.event_id for e in det})}")
 
-    # 4) không có phát hiện — kỹ thuật có thực sự chạy không?
+    # 4) no detection — did the technique actually run?
     technique_ran = any(getattr(e, "source", None) == "sysmon" for e in evidence) \
         or static_result == "clean"
     if technique_ran:
         return ScoreResult("not_detected", evidence_source=src,
-                           reason="kỹ thuật chạy (có dấu vết) nhưng Defender không phát hiện")
+                           reason="technique ran (traces present) but Defender did not detect it")
 
-    # 5) thiếu bằng chứng hai phía -> không kết luận
+    # 5) evidence missing on both sides -> no conclusion
     return ScoreResult("inconclusive", evidence_source=src,
-                       reason="không đủ bằng chứng để kết luận")
+                       reason="insufficient evidence to conclude")

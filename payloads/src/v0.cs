@@ -1,6 +1,6 @@
-// v0 — MẪU TRẦN: ghi mẫu RAW (không obfuscate) ra đĩa.
-// Đo tầng TĨNH/chữ ký: Defender có bắt mẫu lộ rõ ngay không?
-// LƯU Ý: chạy v0 sẽ thả file EICAR thô -> Defender RTP cách ly (đúng là phép đo).
+// v0 — BARE SAMPLE: writes the RAW sample (not obfuscated) to disk.
+// Measures the STATIC/signature layer: does Defender catch an exposed sample immediately?
+// NOTE: running v0 drops the raw EICAR file -> Defender RTP quarantines it (that is the measurement).
 using System.IO;
 
 namespace Payload
@@ -10,7 +10,7 @@ namespace Payload
         static void Main()
         {
             string path = Path.Combine(Common.ExeDir(), "sample_v0.bin");
-            File.WriteAllBytes(path, Common.Decoded());   // RAW, lộ rõ
+            File.WriteAllBytes(path, Common.Decoded());   // RAW, exposed
             Common.Marker("v0", "wrote RAW sample -> " + path);
         }
     }

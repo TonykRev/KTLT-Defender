@@ -1,18 +1,18 @@
 """
-M6 — Fidelity: đo ĐỘ TRUNG THỰC của phép đo (Chủ: Opus).
+M6 — Fidelity: measures the FIDELITY of a measurement (Owner: Opus).
 
-Một phép đo chỉ "hợp lệ" nếu kỹ thuật thực sự đã chạy và môi trường sạch trước đó.
-Chấm 0..1 từ 4 tín hiệu (có trọng số); technique_ran là điều kiện cần (nếu kỹ thuật
-không chạy thì phép đo gần như vô nghĩa nên điểm bị chặn trần).
+A measurement is only "valid" if the technique actually ran and the environment was clean beforehand.
+Scores 0..1 from 4 weighted signals; technique_ran is a necessary condition (if the technique
+did not run, the measurement is nearly meaningless, so the score is capped).
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
 
 WEIGHTS = {
-    "reset_ok": 0.20,                 # môi trường được reset sạch trước khi đo
-    "technique_ran": 0.45,            # kỹ thuật có thực sự thực thi (quan trọng nhất)
-    "collect_window_complete": 0.20,  # cửa sổ thu log đủ dài, không bị cắt
-    "clean_before": 0.15,             # không nhiễu từ lần đo trước (quarantine cũ...)
+    "reset_ok": 0.20,                 # environment was reset cleanly before measuring
+    "technique_ran": 0.45,            # technique actually executed (most important)
+    "collect_window_complete": 0.20,  # log collection window was long enough and not truncated
+    "clean_before": 0.15,             # no noise from the previous measurement (old quarantine...)
 }
 
 
@@ -32,7 +32,7 @@ def compute_fidelity(*, reset_ok, technique_ran, collect_window_complete,
         "clean_before": bool(clean_before),
     }
     s = sum(w for k, w in WEIGHTS.items() if signals[k])
-    # technique_ran là điều kiện cần: không chạy -> chặn trần điểm
+    # technique_ran is a necessary condition: if it did not run -> cap the score
     if not signals["technique_ran"]:
         s = min(s, 0.30)
     min_valid = 0.5

@@ -1,8 +1,8 @@
 group: G5
 tactic: TA0007
 name: Discovery / LOLBin
-# Nhóm "khoảng trống": discovery + LOLBin phần lớn LỌT -> nơi luật YARA/Sigma bổ sung
-# có giá trị nhất. Đa số non-invasive nên có thể smoke-test cả trên máy dev.
+# "Gap" group: discovery + LOLBin techniques are mostly MISSED -> where supplementary YARA/Sigma rules
+# are most valuable. Most are non-invasive, so they can also be smoke-tested on the dev machine.
 techniques:
   - id: T1082
     name: System Information Discovery
@@ -10,18 +10,18 @@ techniques:
     invasive: false
     axis: behavior
     expectation: likely_missed
-    notes: "liệt kê thông tin hệ thống — gần như không bị chặn"
+    notes: "enumerates system information — almost never blocked"
   - id: T1057
     name: Process Discovery
     test_numbers: [1]
     invasive: false
     axis: behavior
     expectation: likely_missed
-    notes: "liệt kê tiến trình — không bị chặn"
+    notes: "enumerates processes — not blocked"
   - id: T1218.010
     name: Signed Binary Proxy Execution - Regsvr32 (LOLBin)
     test_numbers: [1]
     invasive: false
     axis: behavior
     expectation: likely_missed
-    notes: "regsvr32 LOLBin — hành vi hợp lệ bị lạm dụng, hay lọt"
+    notes: "regsvr32 LOLBin — legitimate behavior being abused, often missed"

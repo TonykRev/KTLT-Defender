@@ -1,56 +1,56 @@
 # =====================================================================
-#  CONTRACT LÕI: Cấu hình toàn cục của công cụ đo
-#  Mọi module đọc từ đây. Thay đổi hành vi đo ở 1 chỗ duy nhất.
+#  CORE CONTRACT: Global configuration of the measurement tool
+#  All modules read from here. Change measurement behavior in one place only.
 # =====================================================================
 
-# --- Môi trường đo ---
+# --- Measurement environment ---
 environment:
-  machine_label: "dev-win11"      # 'dev-win11' khi chạy thử trên máy này | 'cloud-vm' khi đo chính thức
-  # Cấu hình Defender được KHÓA cố định khi đo chính thức (ghi lại để tái lập).
-  # Đề xuất: tắt auto-submit; cloud-protection chọn 1 giá trị rồi giữ nguyên cả phiên đo.
-  cloud_protection_enabled: true  # sẽ chốt với bạn ở Phase 0/3
+  machine_label: "dev-win11"      # 'dev-win11' for test runs on this machine | 'cloud-vm' for the official measurement
+  # Defender configuration is LOCKED for the official measurement (recorded for reproducibility).
+  # Recommendation: disable auto-submit; choose one cloud-protection value and keep it for the whole measurement session.
+  cloud_protection_enabled: true  # to be finalized with you in Phase 0/3
   auto_submit_enabled: false
 
-# --- Đường dẫn công cụ hệ thống (đã kiểm chứng trên máy này) ---
+# --- System tool paths (verified on this machine) ---
 tools:
   csc_exe: "C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe"
-  # MpCmdRun nằm trong thư mục Platform có version thay đổi -> dò động lúc chạy.
+  # MpCmdRun is inside the Platform folder whose version changes -> discovered dynamically at runtime.
   mpcmdrun_glob: "C:/ProgramData/Microsoft/Windows Defender/Platform/*/MpCmdRun.exe"
 
-# --- Nguồn bằng chứng: Event log ---
+# --- Evidence sources: Event log ---
 evidence:
   defender_log: "Microsoft-Windows-Windows Defender/Operational"
-  # Event ID Defender quan tâm (Chương 2 — nguồn bằng chứng chính)
+  # Defender event IDs of interest (Chapter 2 — primary evidence source)
   defender_event_ids:
-    1006: "Malware phát hiện (quét)"
-    1015: "Hành vi đáng ngờ phát hiện"
-    1116: "Malware phát hiện (realtime)"
-    1117: "Đã thực hiện hành động đối phó"
-    1118: "Đã khắc phục"
-    1119: "Lỗi nghiêm trọng khi xử lý mối đe doạ"
-    5001: "Realtime protection bị tắt"
-    5007: "Cấu hình thay đổi"
+    1006: "Malware detected (scan)"
+    1015: "Suspicious behavior detected"
+    1116: "Malware detected (realtime)"
+    1117: "Countermeasure action taken"
+    1118: "Remediated"
+    1119: "Critical error while handling threat"
+    5001: "Realtime protection disabled"
+    5007: "Configuration changed"
   sysmon_log: "Microsoft-Windows-Sysmon/Operational"
   sysmon_event_ids: [1, 3, 11, 13, 22]   # ProcessCreate, NetworkConnect, FileCreate, RegistrySet, DNS
 
-# --- Thời gian (giây) ---
+# --- Timing (seconds) ---
 timing:
-  collect_window_s: 20     # thu log trong N giây sau khi kích hoạt
-  reset_timeout_s: 60      # soft-reset phải xong dưới ngưỡng này
+  collect_window_s: 20     # collect logs for N seconds after triggering
+  reset_timeout_s: 60      # soft reset must complete below this threshold
   poll_interval_s: 2
 
-# --- Chấm điểm: 4 trạng thái (Chương 2) ---
+# --- Scoring: 4 states (Chapter 2) ---
 scoring:
   states: ["error", "inconclusive", "detected", "not_detected"]
-  # Ngưỡng fidelity: dưới ngưỡng -> phép đo coi là không hợp lệ -> 'inconclusive'
+  # Fidelity threshold: below it, the measurement is treated as invalid -> 'inconclusive'
   fidelity_min_valid: 0.5
 
-# --- CSDL ---
+# --- Database ---
 database:
   path: "db/results.sqlite"
   schema: "db/schema.sql"
 
-# --- Payload ---
+# --- Payloads ---
 payloads:
   variants: ["v0", "v1", "v2", "v3"]
   out_dir: "payloads/out"

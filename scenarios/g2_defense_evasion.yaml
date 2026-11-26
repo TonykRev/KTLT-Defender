@@ -5,14 +5,14 @@ techniques:
   - id: T1562.001
     name: Impair Defenses - Disable or Modify Tools
     test_numbers: [1]
-    invasive: true          # tắt/sửa Defender -> CHỈ chạy trên cloud-vm
+    invasive: true          # disabling/modifying Defender -> run ONLY on cloud-vm
     axis: behavior
     expectation: likely_detected
-    notes: "Tamper Protection thường chặn"
+    notes: "Tamper Protection typically blocks this"
   - id: T1140
     name: Deobfuscate/Decode Files or Information
     test_numbers: [1]
     invasive: false
     axis: behavior
     expectation: likely_missed
-    notes: "giải mã đơn thuần thường lọt"
+    notes: "simple decoding typically gets through"

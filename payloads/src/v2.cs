@@ -1,6 +1,6 @@
-// v2 — v1 + THỰC THI TỪ ĐĨA: giải mã trong RAM -> ghi RAW ra đĩa -> đọc lại (thực thi từ đĩa).
-// Đo: việc giải mã rồi ghi xuống đĩa có kích hoạt quét tĩnh/RTP không?
-// LƯU Ý: thả file EICAR thô -> Defender RTP cách ly (đúng là phép đo).
+// v2 — v1 + DISK EXECUTION: decode in RAM -> write RAW to disk -> read it back (disk execution).
+// Measures: does decoding then writing to disk trigger the static scan/RTP?
+// NOTE: drops the raw EICAR file -> Defender RTP quarantines it (that is the measurement).
 using System.IO;
 
 namespace Payload
@@ -10,9 +10,9 @@ namespace Payload
         static void Main()
         {
             string path = Path.Combine(Common.ExeDir(), "sample_v2.bin");
-            byte[] d = Common.Decoded();              // giải mã trong RAM
-            File.WriteAllBytes(path, d);              // ghi RAW ra đĩa
-            byte[] back = File.ReadAllBytes(path);    // "thực thi từ đĩa" (benign: đọc lại)
+            byte[] d = Common.Decoded();              // decode in RAM
+            File.WriteAllBytes(path, d);              // write RAW to disk
+            byte[] back = File.ReadAllBytes(path);    // "disk execution" (benign: read back)
             Common.Marker("v2", "decoded->disk->read " + back.Length + "B -> " + path);
         }
     }

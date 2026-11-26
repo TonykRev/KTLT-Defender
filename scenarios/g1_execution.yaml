@@ -1,8 +1,8 @@
 group: G1
 tactic: TA0002
 name: Execution
-# test_numbers mặc định [1] — PHẢI kiểm lại với Invoke-AtomicRedTeam cài trên VM.
-# Mỗi nhóm có 1 kỹ thuật thường-BẮT (baseline) + 1 thường-LỌT (để chứng minh luật bổ sung).
+# test_numbers default to [1] — MUST be re-verified against the Invoke-AtomicRedTeam installed on the VM.
+# Each group has 1 technique that is typically DETECTED (baseline) + 1 that is typically MISSED (to demonstrate supplementary rules).
 techniques:
   - id: T1059.001
     name: PowerShell
@@ -10,11 +10,11 @@ techniques:
     invasive: false
     axis: behavior
     expectation: likely_detected
-    notes: "AMSI thường bắt script PowerShell"
+    notes: "AMSI typically catches PowerShell scripts"
   - id: T1059.003
     name: Windows Command Shell
     test_numbers: [1]
     invasive: false
     axis: behavior
     expectation: likely_missed
-    notes: "cmd đơn giản thường lọt"
+    notes: "simple cmd usually gets through"

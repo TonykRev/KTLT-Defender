@@ -1,7 +1,7 @@
 """
-M8 — DB writer (Chủ: Haiku code boilerplate -> Opus review).
-Khởi tạo schema, mở một `run`, ghi `measurement`, chốt `run`. Mọi bản ghi truy vết được.
-Đặc tả: docs/specs/M8-db_writer.md
+M8 — DB writer (Owner: Haiku code boilerplate -> Opus review).
+Initializes the schema, opens a `run`, writes `measurement` records, and closes the `run`. Every record is traceable.
+Specification: docs/specs/M8-db_writer.md
 """
 from __future__ import annotations
 import json
@@ -15,7 +15,7 @@ VALID_STATES = ("error", "inconclusive", "detected", "not_detected")
 
 
 def init_db(db_path: str, schema_path: str) -> sqlite3.Connection:
-    """Tạo DB + áp schema nếu chưa có."""
+    """Create the DB and apply the schema if it does not exist yet."""
     conn = sqlite3.connect(db_path)
     schema_text = Path(schema_path).read_text(encoding="utf-8")
     conn.executescript(schema_text)
@@ -24,7 +24,7 @@ def init_db(db_path: str, schema_path: str) -> sqlite3.Connection:
 
 
 def start_run(conn: sqlite3.Connection, env: dict) -> int:
-    """Mở một phiên đo, ghi môi trường (defender version, cloud_protection...). Trả run_id."""
+    """Open a measurement session and record the environment (defender version, cloud_protection...). Returns run_id."""
     defender = env.get("defender") or {}
     cur = conn.execute(
         """
@@ -56,7 +56,7 @@ def start_run(conn: sqlite3.Connection, env: dict) -> int:
 
 
 def write_sample(conn: sqlite3.Connection, sample: dict) -> int:
-    """Ghi/Đọc 1 sample theo sha256 (UPSERT). Trả sample_id."""
+    """Write/read 1 sample keyed by sha256 (UPSERT). Returns sample_id."""
     sha = sample["sample_sha256"]
     row = conn.execute(
         "SELECT sample_id FROM samples WHERE sample_sha256 = ?", (sha,)
@@ -84,16 +84,16 @@ def write_sample(conn: sqlite3.Connection, sample: dict) -> int:
 
 
 def _as_json_text(value):
-    """dict/list -> chuỗi JSON; None và chuỗi giữ nguyên."""
+    """dict/list -> JSON string; None and strings are kept unchanged."""
     if isinstance(value, (dict, list)):
         return json.dumps(value, ensure_ascii=False)
     return value
 
 
 def write_measurement(conn: sqlite3.Connection, run_id: int, record: dict) -> int:
-    """Ghi 1 phép đo đầy đủ (state, layer, latency, evidence json...). Trả measurement_id."""
+    """Write 1 complete measurement (state, layer, latency, evidence json...). Returns measurement_id."""
     state = record["state"]
-    assert state in VALID_STATES, f"state không hợp lệ: {state!r}"
+    assert state in VALID_STATES, f"invalid state: {state!r}"
     cur = conn.execute(
         """
         INSERT INTO measurements (
@@ -138,7 +138,7 @@ def write_measurement(conn: sqlite3.Connection, run_id: int, record: dict) -> in
 
 
 def end_run(conn: sqlite3.Connection, run_id: int) -> None:
-    """Đóng phiên đo (ended_at)."""
+    """Close the measurement session (ended_at)."""
     conn.execute(
         "UPDATE runs SET ended_at = ? WHERE run_id = ?",
         (common.utcnow_iso(), run_id),

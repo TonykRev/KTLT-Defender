@@ -1,4 +1,4 @@
-# Python deps cho công cụ đo (Python 3.12)
-pyyaml>=6.0          # đọc config + scenarios
-# yara-python>=4.5   # bật ở Phase 4 khi viết luật YARA (cần wheel; cài sau)
-# Lưu ý: đọc Event Log dùng PowerShell Get-WinEvent qua subprocess -> không cần pywin32.
+# Python dependencies for the measurement tool (Python 3.12)
+pyyaml>=6.0          # read config + scenarios
+# yara-python>=4.5   # enable in Phase 4 when writing YARA rules (needs a wheel; install later)
+# Note: reading the Event Log uses PowerShell Get-WinEvent via subprocess -> pywin32 is not required.

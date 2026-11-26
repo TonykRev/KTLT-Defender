@@ -1,21 +1,21 @@
-# Work-packet M8 — DB writer
+# Work Packet M8 — DB Writer
 
-**Worker:** Haiku (boilerplate). **Review:** Opus. **File:** `db/db_writer.py` (stub đã có), `db/schema.sql` (XONG — không sửa).
+**Worker:** Haiku (boilerplate). **Review:** Opus. **File:** `db/db_writer.py` (stub exists), `db/schema.sql` (COMPLETE — do not edit).
 
-## Mục tiêu
-CRUD tối thiểu cho SQLite theo `schema.sql`. Mọi bản ghi truy vết được (hash + giờ + version Defender).
+## Goal
+Minimal CRUD for SQLite per `schema.sql`. Every record is traceable (hash + time + Defender version).
 
-## Hàm (chữ ký đã có trong stub)
-- `init_db(db_path, schema_path)`: tạo file + `executescript(schema)`; bật `PRAGMA foreign_keys=ON`. Trả connection.
-- `start_run(conn, env)`: INSERT vào `runs` (run_uuid=uuid4, started_at, machine_label, os_*, defender_*,
-  cloud_protection_enabled, auto_submit_enabled, sysmon_present, tool_git_commit). Trả `run_id`.
-- `write_sample(conn, sample)`: UPSERT theo `sample_sha256` (đã có thì trả id cũ). Trả `sample_id`.
-- `write_measurement(conn, run_id, record)`: INSERT đầy đủ 1 phép đo; `created_at=utcnow`;
-  `defender_events_json`/`sysmon_events_json` nhận dict/list → `json.dumps`.
+## Functions (signatures already in the stub)
+- `init_db(db_path, schema_path)`: create the file + `executescript(schema)`; enable `PRAGMA foreign_keys=ON`. Return the connection.
+- `start_run(conn, env)`: INSERT into `runs` (run_uuid=uuid4, started_at, machine_label, os_*, defender_*,
+  cloud_protection_enabled, auto_submit_enabled, sysmon_present, tool_git_commit). Return `run_id`.
+- `write_sample(conn, sample)`: UPSERT by `sample_sha256` (if it exists, return the existing id). Return `sample_id`.
+- `write_measurement(conn, run_id, record)`: INSERT one full measurement; `created_at=utcnow`;
+  `defender_events_json`/`sysmon_events_json` accept dict/list → `json.dumps`.
 - `end_run(conn, run_id)`: UPDATE `ended_at`.
 
 ## Acceptance
-- `tests/test_db_writer.py`: init DB tạm (`:memory:` hoặc tmp), start_run → write_sample → write_measurement →
-  end_run, rồi SELECT lại kiểm đúng giá trị (nhất là state, sha256, defender_sig_version).
-- Dùng tham số hoá (`?`) — KHÔNG nối chuỗi SQL.
-- `state` chỉ nhận 1 trong 4 giá trị hợp lệ (assert/CHECK ở tầng code).
+- `tests/test_db_writer.py`: init a temp DB (`:memory:` or tmp), start_run → write_sample → write_measurement →
+  end_run, then SELECT back and verify exact values (especially state, sha256, defender_sig_version).
+- Use parameterized queries (`?`) — do NOT concatenate SQL strings.
+- `state` accepts only one of the 4 valid values (assert/CHECK at the code level).

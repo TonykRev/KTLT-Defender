@@ -1,41 +1,40 @@
-# Công cụ tự động đánh giá khả năng phát hiện của Windows Defender (Win11) + bộ luật bổ sung
+# Automated Evaluation Tool for Windows Defender Detection (Win11) + Supplementary Rule Set
 
-Bài tập lớn môn KTLT — Học viện Kỹ thuật Mật mã.
-Nhóm: Trần Quang Huy, Nguyễn Văn Thành, Nguyễn Viết Nhật Long, Nguyễn Việt Hiếu. GVHD: Thầy Nguyễn Mạnh Thắng.
+KTLT course project — Academy of Cryptography Techniques (Học viện Kỹ thuật Mật mã).
+Team: Trần Quang Huy, Nguyễn Văn Thành, Nguyễn Viết Nhật Long, Nguyễn Việt Hiếu. Supervisor: Nguyễn Mạnh Thắng.
 
-## Mục tiêu
-Định lượng: Defender trên Windows 11 phát hiện **bao nhiêu** kỹ thuật tấn công, **ở tầng nào**, **mất bao lâu**, và **thiếu luật** cho kỹ thuật nào — rồi đề xuất bộ luật YARA/Sigma bổ sung có đo tỉ lệ báo nhầm (FP) và ánh xạ ASR.
+## Goal
+Quantify: how **many** attack techniques Defender on Windows 11 detects, **at which layer**, **how long** it takes, and for which techniques **rules are missing** — then propose supplementary YARA/Sigma rule sets with measured false-positive (FP) rates and ASR mapping.
 
-Mọi dòng số liệu truy vết được: **hash mẫu + thời điểm + phiên bản Defender**.
+Every measurement row is traceable: **sample hash + timestamp + Defender version**.
 
-## Kiến trúc (3 khối — khớp Chương 3 đề cương)
-- **Khối 1 — Sinh mẫu thử:** 4 biến thể payload C# (`payloads/`), đo trục TĨNH/AMSI/bộ nhớ.
-  - v0 mẫu trần · v1 +mã hoá chuỗi · v2 +thực thi từ đĩa · v3 +thực thi từ bộ nhớ.
-- **Khối 2 — Động cơ hành vi:** Invoke-AtomicRedTeam (`engine/`, `scenarios/`), 5 nhóm kịch bản G1–G5, đo trục HÀNH VI/ASR.
-- **Khối 3 — Trạm đo tự động:** vòng lặp mỗi phép đo (`run_measure.py`):
-  reset sạch → nạp mẫu → quét tĩnh (MpCmdRun) → kích hoạt kỹ thuật →
-  thu log (Defender + Sysmon) → tính fidelity → chấm 1/4 trạng thái → ghi SQLite.
+## Architecture (3 blocks — matches Chapter 3 of the outline)
+- **Block 1 — Test sample generation:** 4 C# payload variants (`payloads/`), measuring the STATIC/AMSI/memory axes.
+  - v0 bare sample · v1 +string encoding · v2 +disk execution · v3 +in-memory execution.
+- **Block 2 — Behavior engine:** Invoke-AtomicRedTeam (`engine/`, `scenarios/`), 5 scenario groups G1–G5, measuring the BEHAVIOR/ASR axis.
+- **Block 3 — Automated measurement station:** loop per measurement (`run_measure.py`):
+  clean reset → load sample → static scan (MpCmdRun) → trigger technique →
+  collect logs (Defender + Sysmon) → compute fidelity → score 1 of 4 states → write to SQLite.
 
-## Cây thư mục
+## Directory tree
 ```
-payloads/   M1,M2  4 biến thể C# + build.ps1
-engine/     M3     wrapper Invoke-AtomicRedTeam
-scenarios/  M4     5 nhóm kịch bản G1–G5 (*.yaml)
-collect/    M5     đọc Event Log Defender + Sysmon
-score/      M6,M7  fidelity + scorer (4 trạng thái)
+payloads/   M1,M2  4 C# variants + build.ps1
+engine/     M3     Invoke-AtomicRedTeam wrapper
+scenarios/  M4     5 scenario groups G1–G5 (*.yaml)
+collect/    M5     reads Defender + Sysmon Event Logs
+score/      M6,M7  fidelity + scorer (4 states)
 db/         M8     schema.sql + db_writer + results.sqlite
 vm/         M9     reset.ps1 (soft-reset)
-rules/      M11    luật YARA + Sigma bổ sung
-report/     M12    sinh bảng/biểu Chương 4 + FP + ASR
-run_measure.py M10 vòng điều phối chính
-docs/       PLAN, SAFETY, đặc tả module (specs/)
-tests/             unit test
+rules/      M11    supplementary YARA + Sigma rules
+report/     M12    generates Chapter 4 tables/charts + FP + ASR
+run_measure.py M10 main orchestration loop
+docs/       PLAN, SAFETY, module specs (specs/)
+tests/             unit tests
 ```
 
-## ⚠️ An toàn — ĐỌC TRƯỚC KHI CHẠY
-Xem [docs/SAFETY.md](docs/SAFETY.md). Tóm tắt: **máy dev (Windows cá nhân) chỉ build + đo an toàn**;
-mọi kỹ thuật xâm lấn (dump LSASS, tắt Defender, persistence...) và **mọi số liệu chính thức** chỉ chạy
-trên **cloud VM cô lập, có snapshot**. Payload là vô hại, chỉ để đo tầng phát hiện.
+## ⚠️ Safety — READ BEFORE RUNNING
+See [docs/SAFETY.md](docs/SAFETY.md). Summary: the **dev machine (personal Windows PC) is only for building + safe measurement**;
+all invasive techniques (LSASS dump, disabling Defender, persistence...) and **all official measurements** run only on an **isolated cloud VM with a snapshot**. Payloads are harmless and exist only to measure the detection layers.
 
-## Trạng thái
-Đang ở Phase 0 (dựng nền). Xem [docs/PLAN.md](docs/PLAN.md).
+## Status
+Currently in Phase 0 (foundation). See [docs/PLAN.md](docs/PLAN.md).

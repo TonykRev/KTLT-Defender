@@ -1,5 +1,5 @@
-// v3 — v1 + THỰC THI TỪ BỘ NHỚ: giải mã và CHỈ giữ trong RAM, KHÔNG chạm đĩa.
-// Đo: chạy in-memory có né được quét tĩnh/RTP không? AMSI có bắt không?
+// v3 — v1 + IN-MEMORY EXECUTION: decode and keep it ONLY in RAM, never touching disk.
+// Measures: does running in-memory evade the static scan/RTP? Does AMSI catch it?
 using System.IO;
 
 namespace Payload
@@ -8,10 +8,10 @@ namespace Payload
     {
         static void Main()
         {
-            byte[] d = Common.Decoded();              // giải mã, chỉ trong RAM
+            byte[] d = Common.Decoded();              // decode, only in RAM
             using (MemoryStream ms = new MemoryStream(d))
             {
-                int len = (int)ms.Length;             // "thực thi từ bộ nhớ" (benign)
+                int len = (int)ms.Length;             // "in-memory execution" (benign)
                 Common.Marker("v3", "decoded in-memory only (" + len + "B), no disk write");
             }
         }

@@ -1,10 +1,10 @@
-# Build output / mẫu đã compile (KHÔNG commit payload nhị phân)
+# Build output / compiled samples (do NOT commit binary payloads)
 payloads/out/
 *.exe
 *.dll
 *.pdb
 
-# CSDL kết quả đo (sinh ra lúc chạy)
+# Measurement result database (generated at runtime)
 db/*.sqlite
 db/*.sqlite-*
 
@@ -13,7 +13,7 @@ db/*.sqlite-*
 __pycache__/
 *.pyc
 
-# Log / tạm
+# Logs / temp
 *.log
 tmp/
 goodware/

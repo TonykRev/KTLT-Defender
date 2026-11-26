@@ -5,14 +5,14 @@ techniques:
   - id: T1547.001
     name: Registry Run Keys / Startup Folder
     test_numbers: [1]
-    invasive: true          # ghi khóa Run -> CHỈ chạy trên cloud-vm
+    invasive: true          # writes a Run key -> run ONLY on cloud-vm
     axis: behavior
     expectation: likely_detected
-    notes: "ghi Run key là mẫu persistence kinh điển, hay bị bắt"
+    notes: "writing a Run key is a classic persistence pattern, often caught"
   - id: T1053.005
     name: Scheduled Task
     test_numbers: [1]
-    invasive: true          # tạo scheduled task -> CHỈ chạy trên cloud-vm
+    invasive: true          # creates a scheduled task -> run ONLY on cloud-vm
     axis: behavior
     expectation: likely_missed
-    notes: "scheduled task lành tính hay lọt"
+    notes: "benign-looking scheduled tasks often get through"

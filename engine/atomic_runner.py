@@ -1,9 +1,9 @@
 """
-M3 — Atomic runner. Đặc tả: docs/specs/M3-atomic_runner.md
+M3 — Atomic runner. Specification: docs/specs/M3-atomic_runner.md
 
-Bọc Invoke-AtomicRedTeam: nạp module, Invoke-AtomicTest <id>, trả về thời điểm
-bắt đầu/kết thúc + exit status để scorer/fidelity dùng.
-LƯU Ý AN TOÀN: chỉ chạy kỹ thuật xâm lấn trên cloud-vm (xem docs/SAFETY.md).
+Wraps Invoke-AtomicRedTeam: loads the module, runs Invoke-AtomicTest <id>, and returns the start/end times
+and exit status for use by the scorer/fidelity.
+SAFETY NOTE: invasive techniques may only be run on cloud-vm (see docs/SAFETY.md).
 """
 from __future__ import annotations
 import re
@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 import common
 
-# Kỹ thuật xâm lấn: chỉ được chạy khi machine_label == "cloud-vm".
+# Invasive techniques: only run when machine_label == "cloud-vm".
 INVASIVE_TECHNIQUES = {
     "T1003", "T1003.001",
     "T1562", "T1562.001",
@@ -29,21 +29,21 @@ class AtomicResult:
     test_number: int | None
     started_iso: str
     ended_iso: str
-    ran: bool            # kỹ thuật có thực thi không (cho fidelity)
+    ran: bool            # whether the technique executed (for fidelity)
     exit_ok: bool
     stdout: str = ""
     stderr: str = ""
 
 
 def is_invasive(technique_id: str) -> bool:
-    """True nếu id nằm trong INVASIVE_TECHNIQUES hoặc bắt đầu bằng một id trong đó."""
+    """True if the id is in INVASIVE_TECHNIQUES or starts with one of the ids in it."""
     tid = (technique_id or "").strip().upper()
     return any(tid == t or tid.startswith(t) for t in INVASIVE_TECHNIQUES)
 
 
 def build_command(technique_id: str, test_number=None, get_prereqs=False,
                   cleanup=True) -> str:
-    # Chỉ cho phép ký tự an toàn trong id để tránh chèn lệnh.
+    # Only allow safe characters in the id to prevent command injection.
     if not re.fullmatch(r"T\d{4}(\.\d{3})?", technique_id):
         raise ValueError(f"invalid technique id: {technique_id!r}")
     cmd = f"Import-Module Invoke-AtomicRedTeam; Invoke-AtomicTest {technique_id}"
@@ -58,7 +58,7 @@ def build_command(technique_id: str, test_number=None, get_prereqs=False,
 
 def invoke_atomic(technique_id: str, *, test_number=None, get_prereqs=False,
                   cleanup=True, cfg=None) -> AtomicResult:
-    """Chạy một Atomic test theo technique id (có chặn kỹ thuật xâm lấn)."""
+    """Run one Atomic test by technique id (with invasive-technique blocking)."""
     if cfg is None:
         cfg = common.load_config()
     label = (cfg.get("environment") or {}).get("machine_label")
@@ -82,7 +82,7 @@ def invoke_atomic(technique_id: str, *, test_number=None, get_prereqs=False,
     started = common.utcnow_iso()
     try:
         cp = common.run_powershell(cmd)
-    except Exception as e:  # không crash: PowerShell thiếu, timeout...
+    except Exception as e:  # do not crash: PowerShell missing, timeout...
         ended = common.utcnow_iso()
         return AtomicResult(technique_id, test_number, started, ended,
                             ran=False, exit_ok=False, stderr=f"{type(e).__name__}: {e}")
