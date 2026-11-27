@@ -1,0 +1,40 @@
+title: KTLD - Persistence via Scheduled Task Creation
+id: 1e871757-1d20-4caa-a7d3-51f44ba25036
+status: experimental
+description: |
+    Supplementary rule (KTLT-Defender M11) for an Axis-B gap: T1053.005 Scheduled Task (G4) was scored
+    not_detected on the measured Defender configuration. Flags scheduled-task creation via schtasks.exe
+    whose action launches a scripting host or runs from a user-writable path.
+references:
+    - https://attack.mitre.org/techniques/T1053/005/
+    - KTLT-Defender Axis B, scenario G4 (run_id 7) -> not_detected
+author: KTLT Defender (Academy of Cryptography Techniques)
+date: 2026-11-27
+tags:
+    - attack.persistence
+    - attack.execution
+    - attack.t1053.005
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_create:
+        Image|endswith: '\schtasks.exe'
+        CommandLine|contains: '/create'
+    suspicious_action:
+        CommandLine|contains:
+            - 'powershell'
+            - 'pwsh'
+            - 'cmd.exe'
+            - 'mshta'
+            - 'wscript'
+            - 'cscript'
+            - 'rundll32'
+            - 'regsvr32'
+            - '\AppData\'
+            - '\Temp\'
+            - '\Users\Public\'
+    condition: selection_create and suspicious_action
+falsepositives:
+    - Software updaters and management tooling that register tasks
+level: medium

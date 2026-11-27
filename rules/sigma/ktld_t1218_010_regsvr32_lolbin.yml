@@ -1,0 +1,36 @@
+title: KTLD - Regsvr32 LOLBin Execution (Squiblydoo / remote scriptlet)
+id: 2f95a6d6-62a7-412a-bfb2-405f58884dea
+status: experimental
+description: |
+    Supplementary rule (KTLT-Defender M11) for an Axis-B gap: T1218.010 Regsvr32 abuse (G5) was
+    scored not_detected on the measured Defender configuration. Flags regsvr32.exe proxy-executing
+    code via scrobj.dll and/or a remote scriptlet (the classic "Squiblydoo" pattern).
+references:
+    - https://attack.mitre.org/techniques/T1218/010/
+    - KTLT-Defender Axis B, scenario G5 (run_id 5) -> not_detected
+author: KTLT Defender (Academy of Cryptography Techniques)
+date: 2026-11-27
+tags:
+    - attack.defense_evasion
+    - attack.t1218.010
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_img:
+        - Image|endswith: '\regsvr32.exe'
+        - OriginalFileName: 'REGSVR32.EXE'
+    selection_scrobj:
+        CommandLine|contains: 'scrobj'
+    selection_remote:
+        CommandLine|contains:
+            - '/i:http'
+            - '/i:https'
+            - '/i:ftp'
+            - '/i:\\'
+    selection_sct:
+        CommandLine|contains: '.sct'
+    condition: selection_img and (selection_scrobj or selection_remote or selection_sct)
+falsepositives:
+    - Rare legitimate installers that register scriptlet COM objects
+level: high

@@ -1,0 +1,40 @@
+title: KTLD - LSASS Memory Access by Non-System Process
+id: 6307644a-eea9-4ea7-a02a-c3d8554c1383
+status: experimental
+description: |
+    Supplementary rule (KTLT-Defender M11) for an Axis-B gap: T1003.001 OS Credential Dumping - LSASS
+    Memory (G3) was scored not_detected on the measured Defender configuration (cloud_protection OFF;
+    see the cloud-ON spot-check for the delta). Flags a process opening a handle to lsass.exe with the
+    access mask typical of memory reads/dumps. Requires Sysmon Event ID 10 (ProcessAccess).
+references:
+    - https://attack.mitre.org/techniques/T1003/001/
+    - KTLT-Defender Axis B, scenario G3 (run_id 8) -> not_detected (cloud_protection OFF)
+author: KTLT Defender (Academy of Cryptography Techniques)
+date: 2026-11-27
+tags:
+    - attack.credential_access
+    - attack.t1003.001
+logsource:
+    category: process_access
+    product: windows
+detection:
+    selection:
+        TargetImage|endswith: '\lsass.exe'
+        GrantedAccess:
+            - '0x1010'
+            - '0x1410'
+            - '0x1438'
+            - '0x143a'
+            - '0x1418'
+            - '0x1f0fff'
+            - '0x1f1fff'
+    filter_system:
+        SourceImage|endswith:
+            - '\wininit.exe'
+            - '\services.exe'
+            - '\MsMpEng.exe'
+            - '\Taskmgr.exe'
+    condition: selection and not filter_system
+falsepositives:
+    - Endpoint protection / EDR agents and some admin tools reading LSASS legitimately
+level: high

@@ -1,0 +1,43 @@
+title: KTLD - Suspicious Windows Command Shell Usage
+id: 6e7a999f-8530-4ce5-ba08-f838e0568e9a
+status: experimental
+description: |
+    Supplementary rule (KTLT-Defender M11) for an Axis-B gap: T1059.003 Windows Command Shell (G1)
+    was scored not_detected on the measured Defender configuration. Plain cmd.exe is extremely common,
+    so this rule intentionally narrows to command lines that chain discovery/evasion operators rather
+    than alerting on cmd.exe itself.
+references:
+    - https://attack.mitre.org/techniques/T1059/003/
+    - KTLT-Defender Axis B, scenario G1 (run_id 6) -> not_detected
+author: KTLT Defender (Academy of Cryptography Techniques)
+date: 2026-11-27
+tags:
+    - attack.execution
+    - attack.t1059.003
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_cmd:
+        Image|endswith: '\cmd.exe'
+    selection_patterns:
+        CommandLine|contains:
+            - '/c echo'
+            - '& echo'
+            - 'for /f'
+            - '>nul 2>&1'
+            - '^'                      # caret obfuscation
+            - 'cmd /c cmd'
+    parent_office_or_script:
+        ParentImage|endswith:
+            - '\winword.exe'
+            - '\excel.exe'
+            - '\powerpnt.exe'
+            - '\outlook.exe'
+            - '\wscript.exe'
+            - '\cscript.exe'
+            - '\mshta.exe'
+    condition: selection_cmd and (selection_patterns or parent_office_or_script)
+falsepositives:
+    - Build scripts, login scripts and legitimate batch automation
+level: medium

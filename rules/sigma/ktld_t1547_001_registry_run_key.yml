@@ -1,0 +1,44 @@
+title: KTLD - Persistence via Registry Run Key
+id: 9be60f4e-7c15-45d4-9ab7-e161037ab1ff
+status: experimental
+description: |
+    Supplementary rule (KTLT-Defender M11) for an Axis-B gap: T1547.001 Registry Run Keys (G4) was
+    scored not_detected on the measured Defender configuration (the Run-key write produced no alert).
+    Flags creation/modification of autorun values under the Run/RunOnce keys.
+references:
+    - https://attack.mitre.org/techniques/T1547/001/
+    - KTLT-Defender Axis B, scenario G4 (run_id 7) -> not_detected
+author: KTLT Defender (Academy of Cryptography Techniques)
+date: 2026-11-27
+tags:
+    - attack.persistence
+    - attack.t1547.001
+logsource:
+    category: registry_set
+    product: windows
+detection:
+    selection_runkey:
+        TargetObject|contains:
+            - '\Software\Microsoft\Windows\CurrentVersion\Run\'
+            - '\Software\Microsoft\Windows\CurrentVersion\RunOnce\'
+            - '\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Run\'
+            - '\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run\'
+    suspicious_value:
+        Details|contains:
+            - 'powershell'
+            - 'pwsh'
+            - 'cmd.exe'
+            - 'mshta'
+            - 'wscript'
+            - 'cscript'
+            - 'rundll32'
+            - 'regsvr32'
+            - '.vbs'
+            - '.js'
+            - 'AppData\'
+            - 'Temp\'
+            - 'Users\Public\'
+    condition: selection_runkey and suspicious_value
+falsepositives:
+    - Legitimate application installers registering an auto-start entry
+level: medium

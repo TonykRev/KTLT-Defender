@@ -1,0 +1,42 @@
+title: KTLD - System Information Discovery via LOLBins
+id: 985b7338-5376-4306-babc-ed0abe7009ee
+status: experimental
+description: |
+    Supplementary rule (KTLT-Defender M11) for an Axis-B gap: T1082 System Information Discovery
+    (G5) was scored not_detected on the measured Defender configuration. Flags the built-in
+    information-gathering binaries when run from a non-interactive / scripted context.
+references:
+    - https://attack.mitre.org/techniques/T1082/
+    - KTLT-Defender Axis B, scenario G5 (run_id 5) -> not_detected
+author: KTLT Defender (Academy of Cryptography Techniques)
+date: 2026-11-27
+tags:
+    - attack.discovery
+    - attack.t1082
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_img:
+        - Image|endswith: '\systeminfo.exe'
+        - Image|endswith: '\wmic.exe'
+        - OriginalFileName:
+            - 'systeminfo.exe'
+            - 'wmic.exe'
+    selection_wmic_cli:
+        Image|endswith: '\wmic.exe'
+        CommandLine|contains:
+            - 'os get'
+            - 'computersystem'
+            - 'bios'
+    parent_scripting:
+        ParentImage|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+            - '\cmd.exe'
+            - '\wscript.exe'
+            - '\cscript.exe'
+    condition: (selection_img and parent_scripting) or selection_wmic_cli
+falsepositives:
+    - Legitimate inventory/asset-management scripts and helpdesk diagnostics
+level: low
