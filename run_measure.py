@@ -97,6 +97,13 @@ def detonate_payload(variant: str, cfg: dict) -> dict:
         low = stderr.lower()
         if "winerror 225" in low or "contains a virus" in low or "potentially unwanted" in low:
             blocked_by_av = True
+    # Defender may also let the EXE launch but block its mid-run file access (a .NET IOException
+    # on the process's own stderr, non-zero exit). That is still an AV block, so scan the captured
+    # process output too, not only the launch exception.
+    if not blocked_by_av:
+        low = (stdout + " " + stderr).lower()
+        if "contains a virus" in low or "potentially unwanted" in low:
+            blocked_by_av = True
     ended = common.utcnow_iso()
     dropped = os.path.join(out_dir, f"sample_{variant}.bin")
     return {

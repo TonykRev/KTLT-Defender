@@ -164,5 +164,34 @@ class MeasureOneBehaviorBlocked(unittest.TestCase):
         self.assertIn(rec["state"], CFG["scoring"]["states"])
 
 
+class DetonateBlockDetection(unittest.TestCase):
+    """detonate_payload must flag an AV block from BOTH the launch exception and process output."""
+
+    def test_block_from_launch_oserror(self):
+        with mock.patch.object(rm.subprocess, "run",
+                               side_effect=OSError("[WinError 225] contains a virus")):
+            d = rm.detonate_payload("v2", CFG)
+        self.assertTrue(d["blocked_by_av"])
+        self.assertFalse(d["ran"])
+
+    def test_block_from_process_stderr(self):
+        # EXE launched (no OSError) but Defender blocked its file read mid-run.
+        cp = SimpleNamespace(
+            stdout="",
+            stderr="Unhandled Exception: System.IO.IOException: Operation did not complete "
+                   "successfully because the file contains a virus or potentially unwanted software.",
+            returncode=-532462766)
+        with mock.patch.object(rm.subprocess, "run", return_value=cp):
+            d = rm.detonate_payload("v2", CFG)
+        self.assertTrue(d["blocked_by_av"])
+
+    def test_clean_run_not_flagged(self):
+        cp = SimpleNamespace(stdout="VARIANT=v1 wrote encoded sample", stderr="", returncode=0)
+        with mock.patch.object(rm.subprocess, "run", return_value=cp):
+            d = rm.detonate_payload("v1", CFG)
+        self.assertFalse(d["blocked_by_av"])
+        self.assertTrue(d["ran"])
+
+
 if __name__ == "__main__":
     unittest.main()
