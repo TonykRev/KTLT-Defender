@@ -77,15 +77,25 @@ _Updated: 2026-11-27_
     event-window pipeline (reset.ps1's own 5013 noise confounds impair-defenses scoring). Documented.
   - **Report caveats:** scoped to Atomic **test#1**; default-ish consumer config; fidelity proves each
     atomic *ran*, not that the malicious *effect* occurred. All runs fidelity=1.0, boxes reverted.
-- 🟨 **Phase 4 — IN PROGRESS.** **M11 rule set DONE** (`rules/`): 2 YARA (v1 encoded sample, v3
-  fileless loader) + 7 Sigma, each tied to a run_id gap; `rules/README.md` maps them. **Validated
-  live:** YARA fires 5/5 on real samples/loaders, **goodware FP = 0 / 12,450 files** (`rules/fp_scan.py`,
-  evidence 13) → precision/recall = 1.0. `tests/test_rules.py`. **TODO:** Sigma TP/FP vs real telemetry
-  (LIMITED — Sysmon unavailable on the VM, image-level bug), ASR/mitigation-mapping table,
-  `report/generate.py` (M12 stub), **report & slides** (deferred by user until all data is in).
+- ✅ **Phase 4 — COMPLETE** (2026-11-27). All deliverables built and verified.
+  - **M11 rule set** (`rules/`): 2 YARA (v1 encoded sample, v3 fileless loader) + 7 Sigma, each tied to a
+    run_id gap; `rules/README.md` maps them. **YARA validated live:** fires 5/5 on real samples/loaders,
+    **goodware FP = 0 / 12,450 files** (`rules/fp_scan.py`, evidence 13) → precision/recall = 1.0.
+  - **M12 `report/generate.py` DONE:** reads `db/results.sqlite` (rebuilt by `report/reconstruct_db.py`
+    from the validated Phase-3 data) → Chapter-4 tables 4.1–4.5 (Markdown + CSV) in `report/out/`.
+  - **Sigma logic-validated** (`rules/sigma_validate.py` + `tests/test_sigma_rules.py`): 7/7 fire on
+    crafted positive events, silent on benign. Live-telemetry TP/FP still **blocked** (Sysmon unavailable
+    on the VM, image-level bug) — documented as a limitation, not a gap in the rules.
+  - **Mitigation mapping** (`report/mitigation_mapping.md`): technique → Defender layer → ASR → MITRE →
+    supplementary rule.
+  - **Report** `report/KTLD_Report.docx` (+ `.md` source): English, 7 chapters, 14 tables, TOC.
+  - **Slides** `report/KTLD_Slides.pptx`: English, 14 slides. NOTE: no visual render-QA possible on this
+    host (no LibreOffice) — content/structure checked; open in PowerPoint to confirm layout.
+  - **61 unit tests pass.** 3 commits (dc465a9, c718405, d834bc9) await manual `git push origin main`.
 
-**Next task:** Phase 4 finalize — Sigma validation where possible, mitigation-mapping, then build the
-report + slides from `report/evidence/09–16`. Optional: user-driven T1562.001 RTP-state re-check.
+**Next task:** Project deliverable-complete. Open report.docx + slides.pptx to review, push the 3 commits.
+Remaining known limitation (needs VM Sysmon fix, out of scope here): Sigma live-telemetry validation.
+Optional: user-driven T1562.001 RTP-state re-check.
 
 ## 🔁 Habit for updating this file
 - Lock in an important decision → record it in the matching section right away.
