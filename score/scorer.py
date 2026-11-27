@@ -56,14 +56,30 @@ def _evidence_source(evidence) -> str:
 
 
 def _infer_layer(det_events, axis) -> str:
-    """Infer the detection layer from the event type and content (heuristic, noted in the report)."""
+    """Infer which Defender layer produced the detection (heuristic, documented in the report).
+
+    Event IDs 1116/1117 are generic "malware detected / action taken" records emitted for on-demand
+    file scans AND live catches (RTP/AMSI) alike, so the event ID alone cannot name the layer. We
+    first honour explicit markers in the event text, then fall back on the measurement axis: on the
+    behaviour axis no on-demand file scan is performed (that is the static axis), so a Defender
+    detection there necessarily came from the live protection layer, not a static file scan.
+    """
     msg = " ".join((getattr(e, "message", "") or "") for e in det_events).lower()
+    ids = {e.event_id for e in det_events}
+    # 1) explicit markers in the event text win
     if "amsi" in msg:
         return "amsi"
-    ids = {e.event_id for e in det_events}
+    if "attack surface reduction" in msg or "asr rule" in msg:
+        return "asr"
+    # 2) dedicated behaviour-monitoring event IDs
     if ids & BEHAVIOR_EVENT_IDS and not (ids & SIGNATURE_EVENT_IDS):
         return "behavior"
-    return "static"
+    # 3) Detection Source text, when Defender includes it
+    if "on-demand" in msg or "scheduled scan" in msg:
+        return "static"
+    # 4) fall back on the axis: a signature-class detection on the behaviour axis ran with no
+    #    on-demand scan, so it is a runtime (RTP/AMSI) catch, not a static file scan.
+    return "static" if axis == "static" else "behavior"
 
 
 def score(evidence, *, trigger_started_iso, fidelity_valid, had_error,

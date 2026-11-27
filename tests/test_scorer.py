@@ -35,13 +35,29 @@ class TestScorer(unittest.TestCase):
         self.assertEqual(r.detection_layer, "static")
         self.assertEqual(r.detect_latency_ms, 0)
 
-    def test_defender_signature_detection_latency(self):
+    def test_defender_detection_latency_behavior_axis(self):
+        # Behaviour axis (the default): a bare 1116/1117 is a RUNTIME catch, not a file scan —
+        # no on-demand MpCmdRun scan is performed on this axis, so it cannot be 'static'.
         r = scorer.score([ev("defender", 1116)], trigger_started_iso=TRIG,
-                         fidelity_valid=True, had_error=False, static_result=None)
+                         fidelity_valid=True, had_error=False, static_result=None, axis="behavior")
         self.assertEqual(r.state, "detected")
-        self.assertEqual(r.detection_layer, "static")
+        self.assertEqual(r.detection_layer, "behavior")
         self.assertEqual(r.detect_latency_ms, 5000)  # 10:00:00 -> 10:00:05
         self.assertEqual(r.evidence_source, "defender")
+
+    def test_defender_signature_on_static_axis_is_static(self):
+        # Axis A (static): a 1116 reached here is an on-write file-scan catch -> 'static' layer.
+        r = scorer.score([ev("defender", 1116)], trigger_started_iso=TRIG,
+                         fidelity_valid=True, had_error=False, static_result="clean", axis="static")
+        self.assertEqual(r.state, "detected")
+        self.assertEqual(r.detection_layer, "static")
+
+    def test_on_demand_source_text_is_static_even_on_behavior_axis(self):
+        # If Defender's own text names an on-demand scan, trust it over the axis fallback.
+        r = scorer.score([ev("defender", 1116, message="Detection Source: On-Demand scan")],
+                         trigger_started_iso=TRIG, fidelity_valid=True, had_error=False,
+                         static_result=None, axis="behavior")
+        self.assertEqual(r.detection_layer, "static")
 
     def test_defender_behavior_detection(self):
         r = scorer.score([ev("defender", 1015)], trigger_started_iso=TRIG,
