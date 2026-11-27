@@ -4,10 +4,12 @@ Rules that cover the techniques/samples **Windows Defender missed** in the KTLT-
 measurements. Each rule cites the measurement (run_id) that justifies it. Rules are `experimental`
 until false-positive–tested against goodware (next step) and validated against the measured samples.
 
-> Scope note: the Axis-B baseline (run_ids 5–8) ran with `cloud_protection=OFF`, so several "gaps"
-> are on Defender's **on-box/offline engine**. A cloud-ON spot-check is in progress; rules whose gap
-> may close with cloud protection are marked **(verify vs cloud-ON)**. They remain valid supplementary
-> rules for offline/air-gapped deployments regardless.
+> Scope note: the Axis-B baseline (run_ids 5–8) ran with `cloud_protection=OFF`. A **cloud-ON
+> spot-check (run_id 9, evidence 14) confirmed the gaps are real, not a config artifact**: with cloud
+> protection demonstrably active (the control technique emitted cloud `2010` events), T1003.001 /
+> T1547.001 / T1218.010 still scored not_detected — **delta = 0/3**. ASR rules were deliberately not
+> evaluated and are the remaining Defender layer (noted per rule); these rules also stand for
+> offline/air-gapped deployments.
 
 ## YARA — file/memory samples (Axis A)
 
@@ -26,11 +28,11 @@ themselves trip an AV scan (keeps the repo clean).
 |---|---|---|---|
 | `sigma/ktld_t1082_system_information_discovery.yml` | T1082 | G5 | Discovery → not_detected |
 | `sigma/ktld_t1057_process_discovery.yml` | T1057 | G5 | Discovery → not_detected |
-| `sigma/ktld_t1218_010_regsvr32_lolbin.yml` | T1218.010 | G5 | LOLBin proxy-exec → not_detected |
+| `sigma/ktld_t1218_010_regsvr32_lolbin.yml` | T1218.010 | G5 | LOLBin proxy-exec → not_detected (**cloud delta=0, confirmed**) |
 | `sigma/ktld_t1059_003_windows_command_shell.yml` | T1059.003 | G1 | cmd.exe execution → not_detected |
-| `sigma/ktld_t1547_001_registry_run_key.yml` | T1547.001 | G4 | Run-key persistence → not_detected **(verify vs cloud-ON)** |
+| `sigma/ktld_t1547_001_registry_run_key.yml` | T1547.001 | G4 | Run-key persistence → not_detected (**cloud delta=0, confirmed**) |
 | `sigma/ktld_t1053_005_scheduled_task.yml` | T1053.005 | G4 | Scheduled-task persistence → not_detected |
-| `sigma/ktld_t1003_001_lsass_memory_access.yml` | T1003.001 | G3 | LSASS dump → not_detected **(verify vs cloud-ON)** (needs Sysmon EID 10) |
+| `sigma/ktld_t1003_001_lsass_memory_access.yml` | T1003.001 | G3 | LSASS dump → not_detected (**cloud delta=0, confirmed**; ASR untested; needs Sysmon EID 10) |
 
 ### Not yet covered
 - **T1555** (Credentials from Password Stores, G3) — too application-specific for a single generic
