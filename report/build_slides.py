@@ -13,6 +13,10 @@ from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.oxml.ns import qn
+from pptx.chart.data import CategoryChartData
+from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
+
+MONO = "Consolas"
 
 NAVY = RGBColor(0x0D, 0x22, 0x40)
 NAVY2 = RGBColor(0x12, 0x2E, 0x55)
@@ -133,6 +137,60 @@ def table(s, x, y, w, col_w, rows, header_fill=TEAL, body_size=12, head_size=12,
 def kicker(s, label, title, size=29):
     txt(s, 0.7, 0.42, 12.0, 0.3, label.upper(), size=12.5, color=TEAL, bold=True, font=BODY)
     txt(s, 0.7, 0.74, 12.0, 0.95, title, size=size, color=NAVY, bold=True, font=HEAD)
+
+
+def evidence_card(s, x, y, w, h, title, lines, size=10.5):
+    """A dark 'terminal' card that renders REAL captured output (monospace).
+    A line starting with '+' is highlighted green, '-' red, '#'/'=>' amber/ice."""
+    rect(s, x, y, w, h, RGBColor(0x0B, 0x1A, 0x30), radius=True)
+    for i, c in enumerate((RED, AMBER, GREEN)):
+        circle(s, x + 0.24 + i * 0.22, y + 0.17, 0.11, c)
+    txt(s, x + 1.05, y + 0.12, w - 1.25, 0.3, title, size=10.5, color=ICE, font=MONO, bold=True)
+    rect(s, x, y + 0.46, w, 0.012, RGBColor(0x24, 0x3A, 0x5A))
+    items = []
+    for ln in lines:
+        c = ICE
+        if ln.startswith("+"):
+            c = GREEN; ln = " " + ln[1:]
+        elif ln.startswith("-"):
+            c = RED; ln = " " + ln[1:]
+        elif ln.startswith("=>"):
+            c = AMBER
+        items.append((ln, {"size": size, "font": MONO, "color": c}))
+    txt(s, x + 0.3, y + 0.6, w - 0.55, h - 0.72, items, sp=3.5)
+
+
+def coverage_bar(s, x, y, w, cells, h=0.5, lsize=8):
+    """11-cell coverage strip: cells = [(label, detected_bool), ...]."""
+    n = len(cells)
+    cw = w / n
+    for i, (lab, det) in enumerate(cells):
+        cx = x + i * cw
+        rect(s, cx + 0.015, y, cw - 0.03, h, GREEN if det else RED)
+        txt(s, cx - 0.1, y + h + 0.06, cw + 0.2, 0.3, lab, size=lsize, color=ICE,
+            align=PP_ALIGN.CENTER)
+
+
+def native_doughnut(s, x, y, w, h, detected, missed, center_label):
+    cd = CategoryChartData()
+    cd.categories = ["Detected", "Missed"]
+    cd.add_series("Axis B", (detected, missed))
+    gf = s.shapes.add_chart(XL_CHART_TYPE.DOUGHNUT, Inches(x), Inches(y), Inches(w), Inches(h), cd)
+    ch = gf.chart
+    ch.has_title = False
+    ch.font.size = Pt(11); ch.font.color.rgb = ICE
+    ch.has_legend = True
+    ch.legend.position = XL_LEGEND_POSITION.BOTTOM
+    ch.legend.include_in_layout = False
+    plot = ch.plots[0]
+    plot.has_data_labels = False
+    pts = plot.series[0].points
+    for pt, col in zip(pts, (GREEN, RED)):
+        pt.format.fill.solid(); pt.format.fill.fore_color.rgb = col
+        pt.format.line.color.rgb = NAVY; pt.format.line.width = Pt(1.5)
+    # center label overlay
+    txt(s, x, y + h / 2 - 0.55, w, 0.6, center_label, size=30, color=WHITE, bold=True,
+        align=PP_ALIGN.CENTER, font=HEAD, anchor=MSO_ANCHOR.MIDDLE)
 
 
 def _groups(body):
@@ -334,10 +392,10 @@ def render_table(spec):
     ncol = len(headers)
     first = tw * (0.34 if ncol >= 4 else 0.40)
     col_w = [first] + [(tw - first) / (ncol - 1)] * (ncol - 1)
-    rh = 0.86 if len(rows) <= 5 else 0.66
+    rh = 0.86 if len(rows) <= 5 else (0.62 if len(rows) <= 7 else 0.56)
     table(s, 0.7, y0, tw, col_w, rows, body_size=12, head_size=12.5, row_h=rh)
     if has_call:
-        rect(s, 8.6, y0, 4.0, min(4.6, rh * len(rows) + 0.3), LIGHT, radius=True)
+        rect(s, 8.6, y0, 4.0, min(4.5, rh * len(rows) + 0.3), LIGHT, radius=True)
         c = spec["callout"]
         txt(s, 8.9, y0 + 0.22, 3.45, 0.5, c[0], size=15, bold=True, color=TEAL, font=HEAD)
         txt(s, 8.9, y0 + 0.78, 3.5, 3.4,
@@ -390,31 +448,88 @@ def render_architecture(spec):
 
 def render_stat(spec):
     s = slide(NAVY)
-    txt(s, 0.7, 0.55, 11.9, 0.35, spec["kicker"].upper(), size=13, color=ICE, bold=True)
-    txt(s, 0.7, 0.9, 11.9, 0.7, spec["title"], size=32, color=WHITE, bold=True, font=HEAD)
-    circle(s, 0.95, 2.15, 2.25, NAVY2)
-    txt(s, 0.95, 2.5, 2.25, 1.0, "18.2%", size=44, color=WHITE, bold=True,
-        align=PP_ALIGN.CENTER, font=HEAD)
-    txt(s, 0.7, 4.45, 2.75, 0.4, "2 of 11 techniques", size=14, color=ICE, align=PP_ALIGN.CENTER)
-    txt(s, 0.7, 4.78, 2.75, 0.35, "all runs fidelity 1.0", size=11.5, color=GRAY, align=PP_ALIGN.CENTER)
+    txt(s, 0.7, 0.5, 11.9, 0.35, spec["kicker"].upper(), size=13, color=ICE, bold=True)
+    txt(s, 0.7, 0.85, 11.9, 0.7, spec["title"], size=32, color=WHITE, bold=True, font=HEAD)
+    # native doughnut (editable chart): 2 detected / 9 missed
+    native_doughnut(s, 0.65, 1.95, 3.35, 3.35, 2, 9, "18.2%")
+    txt(s, 0.5, 5.35, 3.65, 0.35, "2 of 11 techniques · fidelity 1.0", size=12.5, color=ICE,
+        align=PP_ALIGN.CENTER)
     # two wins band
-    rect(s, 3.6, 2.1, 9.0, 1.5, NAVY2, radius=True)
-    txt(s, 3.9, 2.26, 8.5, 0.4, "Defender's 2 wins — two distinct runtime / self-defence layers",
+    rect(s, 4.4, 1.95, 8.2, 1.62, NAVY2, radius=True)
+    txt(s, 4.72, 2.12, 7.7, 0.4, "Defender's 2 wins — two distinct runtime / self-defence layers",
         size=14, bold=True, color=GREEN)
-    txt(s, 3.9, 2.74, 8.5, 0.8, [
+    txt(s, 4.72, 2.62, 7.7, 0.9, [
         ("T1059.001  (Mimikatz / PowerShell)  →  AMSI, ~3.8 s", {"size": 14.5, "color": WHITE}),
         ("T1562.001  (disable Defender)  →  Tamper Protection (state-verified)", {"size": 14.5, "color": WHITE}),
     ], sp=4)
-    # gaps summary (no full ID list -- enumerated on the next slide)
-    rect(s, 3.6, 3.8, 9.0, 2.5, NAVY2, radius=True)
-    txt(s, 3.9, 3.98, 8.5, 0.45, "9 genuine gaps — all not_detected", size=15, bold=True, color=AMBER)
-    txt(s, 3.9, 4.55, 8.5, 1.1, [
-        ("Span the full kill chain: discovery → execution/LOLBin → persistence →", {"size": 15, "color": WHITE}),
-        ("credential access → defense evasion  (enumerated next slide).", {"size": 15, "color": WHITE}),
-    ], sp=4)
-    txt(s, 3.9, 5.5, 8.5, 0.7,
+    # per-technique coverage strip
+    txt(s, 4.4, 3.85, 8.2, 0.35, "Per-technique coverage — 2 detected, 9 missed (across the kill chain)",
+        size=13, bold=True, color=AMBER)
+    cells = [("59.001", True), ("62.001", True), ("1082", False), ("1057", False), ("1218", False),
+             ("59.003", False), ("1547", False), ("1053", False), ("1003", False), ("1555", False), ("1140", False)]
+    coverage_bar(s, 4.4, 4.35, 8.2, cells)
+    txt(s, 4.4, 5.35, 8.2, 0.7,
         "Gaps hold under the cloud-ON and LSASS-ASR spot-checks — not a cloud-OFF config artefact.",
         size=13.5, italic=True, color=ICE)
+    notes(s, spec.get("notes"))
+
+
+def render_axisa_table(spec):
+    s = slide()
+    kicker(s, spec["kicker"], spec["title"])
+    txt(s, 0.7, 1.78, 11.9, 0.4,
+        [(ln, {"size": 13, "color": GRAY, "italic": True}) for ln in spec.get("body", [])], sp=2)
+    headers = spec["table_headers"]
+    rows = [headers] + [_color_row(r) for r in spec["table_rows"]]
+    table(s, 0.7, 2.35, 7.1, [1.0, 4.1, 2.0], rows, body_size=12.5, head_size=12.5, row_h=0.72)
+    evidence_card(s, 8.05, 2.35, 4.55, 3.95, "db/results.sqlite  ·  run_id=2 (Axis A)", [
+        " id var state         layer  threat",
+        "+ 1 v0  detected      static Virus:DOS/EICAR_Test_File",
+        "- 4 v1  not_detected   -     (clean)",
+        "+ 5 v2  detected      static Virus:DOS/EICAR_Test_File",
+        "- 6 v3  not_detected   -     (clean)",
+        "",
+        "=> fidelity=1.0 on all 4 — the misses are",
+        "   real evasions, not failed executions",
+    ], size=10)
+    notes(s, spec.get("notes"))
+
+
+def render_twowins(spec):
+    s = slide()
+    kicker(s, spec["kicker"], spec["title"])
+    groups = _groups(spec["body"])
+    _panel(s, 0.7, 1.8, 5.75, 3.35, groups[0][0], groups[0][1], bsize=13.5)
+    _panel(s, 6.85, 1.8, 5.75, 3.35, groups[1][0], groups[1][1], bsize=13.5)
+    evidence_card(s, 0.7, 5.35, 11.9, 1.55, "vm/watch_rtp.ps1  ·  T1562.001 direct RTP-state check", [
+        "trigger  Set-MpPreference -DisableRealtimeMonitoring 1   @23:15:17",
+        "+ RTP     never left True for the whole window",
+        "  log     5013 Tamper Protection BLOCKED change @23:15:17  (no 5007, no 5001)",
+        "=> Tamper Protection blocked the disable  —  Defender WIN",
+    ], size=10.5)
+    notes(s, spec.get("notes"))
+
+
+def render_yara(spec):
+    s = slide()
+    kicker(s, spec["kicker"], spec["title"])
+    groups = _groups(spec["body"])
+    _panel(s, 0.7, 1.8, 6.1, 4.55, groups[0][0], groups[0][1], bsize=14)
+    evidence_card(s, 7.15, 1.8, 5.45, 3.2, "python rules/fp_scan.py  ·  yara-python 4.5.4", [
+        "corpus   System32 + SysWOW64 + .NET Framework",
+        "scanned  12,450 files   skipped 0   time 67.2s",
+        "+ false positives ................ 0",
+        "  .NET calls FromBase64String yet none match",
+        "  (rule also requires the project's blob)",
+    ], size=10.5)
+    rect(s, 7.15, 5.15, 2.62, 1.2, GREEN, radius=True)
+    txt(s, 7.15, 5.32, 2.62, 0.6, "0 FP", size=30, color=WHITE, bold=True,
+        align=PP_ALIGN.CENTER, font=HEAD)
+    txt(s, 7.15, 5.92, 2.62, 0.3, "/ 12,450 goodware", size=11, color=WHITE, align=PP_ALIGN.CENTER)
+    rect(s, 10.0, 5.15, 2.6, 1.2, TEAL, radius=True)
+    txt(s, 10.0, 5.32, 2.6, 0.6, "5 / 5", size=30, color=WHITE, bold=True,
+        align=PP_ALIGN.CENTER, font=HEAD)
+    txt(s, 10.0, 5.92, 2.6, 0.3, "true positives (incl. v3)", size=11, color=WHITE, align=PP_ALIGN.CENTER)
     notes(s, spec.get("notes"))
 
 
@@ -558,7 +673,7 @@ S = {
     "callout":["A single config lock keeps destructive work off the dev machine and on the isolated VM."],
     "notes":"All invasive work — LSASS dumps, disabling Defender, persistence, credential theft — runs only on a network-isolated Azure VM restored from a clean snapshot. The baseline is a near-default consumer configuration: RTP and Tamper on, cloud off, engine and signature pinned for reproducibility. A single machine_label in config.yaml enforces the boundary: on the dev box the runner refuses every invasive technique and reset never touches Defender. That let us run genuinely dangerous procedures safely while keeping the dev machine — and the committee's own clone — untouched."},
 
- 13: {"n":13,"title":"Axis A: signature vs form","kicker":"Results · Axis A","layout":"table","body":[
+ 13: {"n":13,"title":"Axis A: signature vs form","kicker":"Results · Axis A","layout":"axisa","body":[
     "Same C# payload, four presentations to Defender's static engine; fidelity 1.0 on every variant."],
     "table_headers":["Variant","Form presented to Defender","Result"],
     "table_rows":[["v0","Bare sample, raw bytes on disk","DETECTED"],
@@ -582,7 +697,7 @@ S = {
  15: {"n":15,"title":"Defender stopped 2, missed 9","kicker":"Results · Axis B","layout":"stat","body":[],
     "notes":"The headline of the whole study. Across eleven ATT&CK techniques — Atomic test #1 of each — Defender detected two and missed nine, an 18.2% detection rate on the behaviour axis. The two it caught came from two different layers, neither signature: AMSI caught the Mimikatz PowerShell in about 3.8 seconds, and Tamper Protection blocked the attempt to disable Defender. The nine it missed span discovery, LOLBins, persistence, credential access and deobfuscation — and every one survived our cloud-ON and ASR spot-checks, so they are genuine coverage gaps, not an artefact of cloud being off."},
 
- 16: {"n":16,"title":"The two wins, two layers","kicker":"Results · Axis B","layout":"two-panel","body":[
+ 16: {"n":16,"title":"The two wins, two layers","kicker":"Results · Axis B","layout":"twowins","body":[
     "T1059.001 — Mimikatz via PowerShell",
     "  Blocked by AMSI at runtime in ~3.8 s (script-content scanning).",
     "  Events 1116 + 1117; the atomic itself failed with 'Access is denied'.",
@@ -623,7 +738,7 @@ S = {
     "callout":["Net effect","A non-run now scores inconclusive / error — never a false not_detected."],
     "notes":"This slide is about measurement integrity. Three bugs only showed up once we scored real telemetry. The most consequential was the false-ran bug: the T1562.001 atomic was never installed, Invoke-AtomicTest exited zero while printing that the file did not exist, and the old runner counted that as a real not_detected. Requiring the Executing-test marker fixed it, and an install-check across all eleven IDs confirmed only that one run was invalid, so every other verdict holds. The hardened tool passes all 61 unit tests."},
 
- 21: {"n":21,"title":"YARA closes the payload gaps","kicker":"Rule set","layout":"two-panel","body":[
+ 21: {"n":21,"title":"YARA closes the payload gaps","kicker":"Rule set","layout":"yara","body":[
     "Two rules — one per Axis A gap the signature engine missed",
     "  KTLD_Encoded_Sample_On_Disk → the v1 encoded sample (XOR 0x5A + Base64 blob)",
     "  KTLD_Payload_Loader_Binary → the loader/dropper; catches fileless v3 by its on-disk loader",
@@ -681,6 +796,7 @@ RENDER = {
     "list": render_list, "cards": render_cards, "two-panel": render_panels,
     "content": render_content, "table": render_table, "architecture": render_architecture,
     "stat": render_stat, "killchain": render_killchain,
+    "axisa": render_axisa_table, "twowins": render_twowins, "yara": render_yara,
 }
 
 # ===================== assemble in order =====================
