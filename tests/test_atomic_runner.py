@@ -9,7 +9,14 @@ DEV = {"environment": {"machine_label": "dev-win11"}}
 CLOUD = {"environment": {"machine_label": "cloud-vm"}}
 
 
-def _cp(out="ok", rc=0):
+SUCCESS_OUT = ("Executing test: T1082-1 System Information Discovery\n"
+               "Done executing test: T1082-1")
+# Invoke-AtomicTest can exit 0 but only print a failure when the atomic is not installed:
+MISSING_OUT = ("Unable to find atomics file for Technique T1562.001 "
+               "at path C:\\AtomicRedTeam\\atomics\\T1562.001\\T1562.001.yaml - does not exist")
+
+
+def _cp(out=SUCCESS_OUT, rc=0):
     return subprocess.CompletedProcess(args=[], returncode=rc, stdout=out, stderr="")
 
 
@@ -59,6 +66,22 @@ class TestAtomicRunner(unittest.TestCase):
             r = atomic_runner.invoke_atomic("T1082", cfg=DEV)
         self.assertFalse(r.ran)
         self.assertIn("no ps", r.stderr)
+
+    def test_missing_atomic_is_not_ran(self):
+        # Atomic not installed: Invoke-AtomicTest exits 0 but prints a "does not exist" error to
+        # stdout. This must NOT be counted as a real run (else the scorer mis-reads not_detected).
+        with mock.patch.object(common, "run_powershell",
+                               return_value=_cp(out=MISSING_OUT, rc=0)):
+            r = atomic_runner.invoke_atomic("T1562.001", cfg=CLOUD)
+        self.assertTrue(r.exit_ok)      # it DID exit 0 ...
+        self.assertFalse(r.ran)         # ... but the technique never executed
+
+    def test_exit0_without_execution_marker_is_not_ran(self):
+        # Exit 0 with some unrelated stdout but no "Executing test" marker -> not a real run.
+        with mock.patch.object(common, "run_powershell",
+                               return_value=_cp(out="PS prompt noise, nothing executed", rc=0)):
+            r = atomic_runner.invoke_atomic("T1082", cfg=DEV)
+        self.assertFalse(r.ran)
 
 
 if __name__ == "__main__":

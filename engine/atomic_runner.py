@@ -91,6 +91,16 @@ def invoke_atomic(technique_id: str, *, test_number=None, get_prereqs=False,
     out = cp.stdout or ""
     err = cp.stderr or ""
     exit_ok = cp.returncode == 0
-    ran = exit_ok and bool(out.strip())
+    # Invoke-AtomicTest can exit 0 while only printing a failure to stdout (e.g. the atomic for the
+    # technique is NOT installed on this host) -> that is NOT a real execution. Counting it as 'ran'
+    # would mis-score the measurement as not_detected even though the technique never fired. Require
+    # the positive "Executing test" marker Invoke-AtomicTest prints when it actually runs a test, and
+    # reject the known not-run phrases, so a missing/failed atomic is correctly flagged ran=False.
+    low = (out + " " + err).lower()
+    executed = ("executing test" in low) or ("done executing test" in low)
+    looks_failed = any(p in low for p in (
+        "unable to find", "does not exist", "no atomics", "no atomic test",
+        "cannot find path", "atomics file", "missing from the following path"))
+    ran = exit_ok and bool(out.strip()) and executed and not looks_failed
     return AtomicResult(technique_id, test_number, started, ended,
                         ran=ran, exit_ok=exit_ok, stdout=out, stderr=err)
