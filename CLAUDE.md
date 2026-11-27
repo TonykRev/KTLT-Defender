@@ -57,10 +57,30 @@ _Updated: 2026-11-27_
     RTP not scanning-on-write in-window ⇒ **no 1116/1117 Operational-log events**, and the dropped EICAR persisted. On the
     clean admin cloud-vm (no exclusions), run some measurements **without** `-DisableRemediation` to exercise the RTP layer
     and emit 1116/1117 telemetry.
-- ⬜ **Phase 3** — Real measurement on the cloud VM (runbook + reduced matrix).
-- ⬜ **Phase 4** — YARA/Sigma rules (M11, `rules/`) + goodware FP + ASR + report (M12, `report/generate.py` is still a stub) + Chapter 4 tables + **report & slides**.
+- 🟨 **Phase 3 — IN PROGRESS** on cloud-vm (driven from on-prem via cross-session messaging to the
+  "setup VM" Claude; two-way comms working). Axis B baseline **cloud_protection=OFF**:
+  - **G1/G3/G4/G5 DONE** (run_ids 5–8, 9 measurements): only **T1059.001 detected** (runtime/AMSI,
+    3.8 s); the other 8 **not_detected**, incl. **T1003.001 LSASS**. Evidence `report/evidence/09–12`.
+  - **Scorer hardened** against real cloud-vm behaviour: (a) detection **layer attributed by axis**
+    (behaviour-axis catches are runtime, not "static"); (b) **a Defender block = detection**, not a
+    measurement error (positive detections now outrank the error/fidelity gates). 53→**57 tests**.
+  - **VALIDITY FINDING:** cloud-OFF understates Defender (LSASS should be caught) → **cloud-ON
+    spot-check** prepared: `scenarios/spotcheck/cloud_on_delta.yaml` + `docs/PHASE3_CLOUD_ON_SPOTCHECK.md`
+    (changes only the cloud var, pins versions, reverts). Decision locked with user = measure the delta.
+  - **PENDING on VM (idle):** the cloud-ON spot-check run, and **G2** (defense evasion — I'm blocked
+    by the safety classifier from relaying the disable-Defender technique, so G2 is **user-driven**:
+    user runs `python run_measure.py --plan scenarios/g2_defense_evasion.yaml --yes` on the VM; for
+    T1562.001, 5013 during the trigger window = a real Tamper-Protection block, not reset noise).
+- 🟨 **Phase 4 — STARTED.** **M11 rule set DONE** (`rules/`): 2 YARA (v1 encoded sample, v3 fileless
+  loader) + 7 Sigma (T1082/T1057/T1059.003/T1218.010/T1547.001/T1053.005/T1003.001), each tied to a
+  run_id gap; `rules/README.md` maps them. **Validated live:** YARA fires 5/5 on real samples/loaders,
+  **goodware FP = 0 / 12,450 files** (`rules/fp_scan.py`, evidence 13) → precision/recall = 1.0.
+  `tests/test_rules.py` added. Still TODO: Sigma TP/FP vs real telemetry (needs VM), ASR mapping,
+  `report/generate.py` (M12 stub), **report & slides** (deferred by user until all data is in).
 
-**Next task:** build the **report + presentation slides** from the measurement data/evidence (user request), and prepare the Phase 3 cloud-vm runbook.
+**Next task:** user to nudge the idle VM to run the cloud-ON spot-check + G2; meanwhile the local
+product (tool + YARA rules + FP) is complete and tested. Then: Sigma validation on VM telemetry,
+finalize rules, and only then the report + slides. Unpushed local commits: fc292f6, d44c985, + STATUS.
 
 ## 🔁 Habit for updating this file
 - Lock in an important decision → record it in the matching section right away.
