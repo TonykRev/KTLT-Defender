@@ -89,8 +89,10 @@ _Updated: 2026-11-27_
   - **Mitigation mapping** (`report/mitigation_mapping.md`): technique → Defender layer → ASR → MITRE →
     supplementary rule.
   - **Report** `report/KTLD_Report.docx` (+ `.md` source): English, 7 chapters, 14 tables, TOC.
-  - **Slides** `report/KTLD_Slides.pptx`: English, 14 slides. NOTE: no visual render-QA possible on this
-    host (no LibreOffice) — content/structure checked; open in PowerPoint to confirm layout.
+  - **Slides** `report/KTLD_Slides.pptx` (built by `report/build_slides.py`): English, **25 slides**
+    (expanded from 14 via a 4-designer+critic workflow; agenda, 3 dividers, per-layer, evidence,
+    2-wins, 9-gaps-by-tactic, Axis-A interpretation; speaker notes on every slide). NOTE: no visual
+    render-QA on this host (no LibreOffice) — content/structure checked; open in PowerPoint for layout.
   - **61 unit tests pass.** 3 commits (dc465a9, c718405, d834bc9) await manual `git push origin main`.
 
 **Next task:** Project deliverable-complete. Open report.docx + slides.pptx to review, push the 3 commits.
