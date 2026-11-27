@@ -1,0 +1,19 @@
+group: SC2
+tactic: TA0006
+name: ASR spot-check - LSASS credential theft rule
+# Isolated test of ONE Defender layer: the Attack Surface Reduction rule
+# "Block credential stealing from the Windows local security authority subsystem (lsass.exe)"
+# GUID 9e6c4e1f-7d60-472f-ba1a-a39ef669e4b2.
+# Baseline (run_id 8) and cloud-ON spot-check (run_id 9) both scored T1003.001 not_detected. This run
+# enables ONLY that ASR rule (cloud left OFF, to isolate ASR) and re-runs the same technique to see
+# whether ASR closes the LSASS gap. An ASR block emits Defender event 1121 -> the scorer already maps
+# it to state=detected, layer=asr.
+# Procedure + revert: docs/PHASE3_ASR_SPOTCHECK.md
+techniques:
+  - id: T1003.001
+    name: OS Credential Dumping - LSASS Memory
+    test_numbers: [1]
+    invasive: true
+    axis: behavior
+    expectation: likely_detected
+    notes: "ASR lsass rule enabled (Block); baseline + cloud-ON both = not_detected"
