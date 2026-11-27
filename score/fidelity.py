@@ -1,16 +1,18 @@
 """
 M6 — Fidelity: measures the FIDELITY of a measurement (Owner: Opus).
 
-A measurement is only "valid" if the technique actually ran and the environment was clean beforehand.
-Scores 0..1 from 4 weighted signals; technique_ran is a necessary condition (if the technique
-did not run, the measurement is nearly meaningless, so the score is capped).
+A measurement is only "valid" if the technique stimulus was delivered and the environment was clean
+beforehand. "Stimulus delivered" (technique_ran) means the payload executed OR Defender blocked it at
+the access layer (an AV block proves the stimulus reached Defender) — the caller passes that combined
+signal. Scores 0..1 from 4 weighted signals; technique_ran is a necessary condition (if the stimulus
+was never delivered, the measurement is nearly meaningless, so the score is capped).
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
 
 WEIGHTS = {
     "reset_ok": 0.20,                 # environment was reset cleanly before measuring
-    "technique_ran": 0.45,            # technique actually executed (most important)
+    "technique_ran": 0.45,            # stimulus delivered: payload executed OR Defender blocked it
     "collect_window_complete": 0.20,  # log collection window was long enough and not truncated
     "clean_before": 0.15,             # no noise from the previous measurement (old quarantine...)
 }

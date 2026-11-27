@@ -84,6 +84,7 @@ def detonate_payload(variant: str, cfg: dict) -> dict:
     ran = False
     stdout = ""
     stderr = ""
+    blocked_by_av = False
     try:
         cp = subprocess.run([exe], capture_output=True, text=True, timeout=60)
         stdout = cp.stdout or ""
@@ -91,12 +92,18 @@ def detonate_payload(variant: str, cfg: dict) -> dict:
         ran = bool(stdout.strip()) or cp.returncode == 0
     except (subprocess.TimeoutExpired, OSError) as e:
         stderr = f"{type(e).__name__}: {e}"
+        # WinError 225 = Defender blocked the file at the access layer before it could run.
+        # An AV block is itself a detection (the strongest kind), not a failed detonation.
+        low = stderr.lower()
+        if "winerror 225" in low or "contains a virus" in low or "potentially unwanted" in low:
+            blocked_by_av = True
     ended = common.utcnow_iso()
     dropped = os.path.join(out_dir, f"sample_{variant}.bin")
     return {
         "trigger_started_at": started,
         "trigger_ended_at": ended,
         "ran": ran,
+        "blocked_by_av": blocked_by_av,
         "dropped_path": dropped if os.path.exists(dropped) else None,
         "exe_path": exe if os.path.exists(exe) else None,
         "stdout": stdout,
@@ -219,8 +226,11 @@ def measure_one(conn, run_id, item: dict, cfg: dict) -> dict:
         trigger_started_at = deto["trigger_started_at"]
         trigger_ended_at = deto["trigger_ended_at"]
         sample_loaded_at = trigger_ended_at
-        technique_ran = deto["ran"]
-        if not deto["ran"]:
+        blocked_by_av = deto.get("blocked_by_av", False)
+        # If Defender blocked the payload at the access layer, the stimulus still reached Defender
+        # and Defender acted on it -> a valid, delivered measurement (a detection), not a failed run.
+        technique_ran = deto["ran"] or blocked_by_av
+        if not deto["ran"] and not blocked_by_av:
             err_parts.append(f"payload {variant} did not run: {deto.get('stderr','')[:120]}")
         # Static scan of the dropped sample (if still present) to measure the signature layer
         scan_target = deto.get("dropped_path") or deto.get("exe_path")

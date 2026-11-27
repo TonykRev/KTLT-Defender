@@ -87,7 +87,7 @@ class PsQuote(unittest.TestCase):
 class MeasureOneStatic(unittest.TestCase):
     """measure_one on a static item: reset OK + threat_found -> state 'detected'."""
 
-    def _run(self, static_result, had_reset=True):
+    def _run(self, static_result, had_reset=True, ran=True, blocked_by_av=False):
         item = {"axis": "static", "variant": "v0",
                 "sample": {"sha256": "a" * 64, "path": "payloads/out/v0.exe",
                            "size": 4608}}
@@ -98,8 +98,10 @@ class MeasureOneStatic(unittest.TestCase):
             "detonate_payload": mock.Mock(return_value={
                 "trigger_started_at": "2026-01-01T00:00:01+00:00",
                 "trigger_ended_at": "2026-01-01T00:00:02+00:00",
-                "ran": True, "dropped_path": "payloads/out/sample_v0.bin",
-                "exe_path": "payloads/out/v0.exe", "stdout": "VARIANT=v0", "stderr": ""}),
+                "ran": ran, "blocked_by_av": blocked_by_av,
+                "dropped_path": "payloads/out/sample_v0.bin" if ran else None,
+                "exe_path": "payloads/out/v0.exe", "stdout": "VARIANT=v0" if ran else "",
+                "stderr": "" if ran else "OSError: [WinError 225] contains a virus"}),
             "static_scan": mock.Mock(return_value={
                 "result": static_result, "threat_name": "Virus:DOS/EICAR_Test_File",
                 "scan_at": "2026-01-01T00:00:03+00:00"}),
@@ -127,6 +129,14 @@ class MeasureOneStatic(unittest.TestCase):
     def test_clean_is_not_detected(self):
         rec, _, _ = self._run("clean")
         self.assertEqual(rec["state"], "not_detected")
+
+    def test_av_block_is_detected(self):
+        # Defender blocked execution (WinError 225): payload did not run, but the AV block
+        # is itself a detection -> state detected with valid fidelity (not inconclusive).
+        rec, _, _ = self._run("threat_found", ran=False, blocked_by_av=True)
+        self.assertEqual(rec["state"], "detected")
+        self.assertEqual(rec["fidelity_valid"], 1)
+        self.assertIsNone(rec["error_message"])
 
     def test_written_state_is_always_valid(self):
         rec, _, _ = self._run("threat_found")
