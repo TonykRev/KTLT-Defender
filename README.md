@@ -1,7 +1,7 @@
 # Automated Evaluation Tool for Windows Defender Detection (Win11) + Supplementary Rule Set
 
-
-Team: Me and Claude max 
+KTLT course project — Academy of Cryptography Techniques (Học viện Kỹ thuật Mật mã).
+Team: Trần Quang Huy, Nguyễn Văn Thành, Nguyễn Viết Nhật Long, Nguyễn Việt Hiếu. Supervisor: Nguyễn Mạnh Thắng.
 
 ## Goal
 Quantify: how **many** attack techniques Defender on Windows 11 detects, **at which layer**, **how long** it takes, and for which techniques **rules are missing** — then propose supplementary YARA/Sigma rule sets with measured false-positive (FP) rates and ASR mapping.
