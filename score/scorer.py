@@ -67,7 +67,7 @@ def _infer_layer(det_events, axis) -> str:
 
 
 def score(evidence, *, trigger_started_iso, fidelity_valid, had_error,
-          static_result, cfg=None, axis="behavior") -> ScoreResult:
+          static_result, technique_ran=None, cfg=None, axis="behavior") -> ScoreResult:
     evidence = list(evidence or [])
 
     # 1) measurement error -> not counted
@@ -100,11 +100,18 @@ def score(evidence, *, trigger_started_iso, fidelity_valid, had_error,
                            reason=f"Defender events {sorted({e.event_id for e in det})}")
 
     # 4) no detection — did the technique actually run?
-    technique_ran = any(getattr(e, "source", None) == "sysmon" for e in evidence) \
-        or static_result == "clean"
-    if technique_ran:
+    # Prefer the caller's authoritative signal (the atomic runner / detonation knows whether the
+    # technique executed). Fall back to inferring from evidence only when it is not supplied — the
+    # old inference fails on the behavioral axis when Sysmon is absent (no sysmon events, no static
+    # scan), which would wrongly turn every missed technique into 'inconclusive' instead of
+    # 'not_detected' — exactly the gap cases the study is meant to surface.
+    ran = technique_ran
+    if ran is None:
+        ran = any(getattr(e, "source", None) == "sysmon" for e in evidence) \
+            or static_result == "clean"
+    if ran:
         return ScoreResult("not_detected", evidence_source=src,
-                           reason="technique ran (traces present) but Defender did not detect it")
+                           reason="technique ran but Defender did not detect it")
 
     # 5) evidence missing on both sides -> no conclusion
     return ScoreResult("inconclusive", evidence_source=src,

@@ -280,6 +280,7 @@ def measure_one(conn, run_id, item: dict, cfg: dict) -> dict:
         fidelity_valid=fid.valid,
         had_error=had_error,
         static_result=static["result"],
+        technique_ran=technique_ran,
         cfg=cfg,
         axis=axis,
     )

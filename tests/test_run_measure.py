@@ -164,6 +164,31 @@ class MeasureOneBehaviorBlocked(unittest.TestCase):
         self.assertIn(rec["state"], CFG["scoring"]["states"])
 
 
+class ScorerTechniqueRanSignal(unittest.TestCase):
+    """Behavioral axis with no Sysmon: the runner's technique_ran signal drives not_detected."""
+
+    def _score(self, technique_ran):
+        return rm.scorer.score(
+            [], trigger_started_iso="2026-01-01T00:00:00+00:00",
+            fidelity_valid=True, had_error=False, static_result=None,
+            technique_ran=technique_ran, axis="behavior")
+
+    def test_ran_no_detection_is_not_detected(self):
+        # Technique executed (atomic ran), no Defender events, no Sysmon -> not_detected (a gap case).
+        self.assertEqual(self._score(True).state, "not_detected")
+
+    def test_unknown_run_is_inconclusive(self):
+        # Technique did not run (or unknown) and nothing detected -> cannot conclude.
+        self.assertEqual(self._score(False).state, "inconclusive")
+
+    def test_signal_absent_falls_back_to_inference(self):
+        # Backward compatible: without the signal, behavior+no-evidence stays inconclusive.
+        r = rm.scorer.score([], trigger_started_iso="2026-01-01T00:00:00+00:00",
+                            fidelity_valid=True, had_error=False, static_result=None,
+                            axis="behavior")
+        self.assertEqual(r.state, "inconclusive")
+
+
 class DetonateBlockDetection(unittest.TestCase):
     """detonate_payload must flag an AV block from BOTH the launch exception and process output."""
 
