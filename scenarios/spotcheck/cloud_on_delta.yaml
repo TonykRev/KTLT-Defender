@@ -1,0 +1,37 @@
+group: SC1
+tactic: MULTI
+name: Cloud-ON spot-check (delta vs cloud-OFF baseline)
+# Re-run of a focused subset of techniques with Defender's CLOUD-DELIVERED PROTECTION ENABLED, to
+# measure the delta against the cloud-OFF baseline (Axis B run_ids 5-8). ONLY the cloud setting is
+# changed between the baseline and this pass (MAPSReporting + SubmitSamplesConsent); ASR rules and
+# everything else are left as-is, so any change in state is attributable to cloud protection alone.
+# Procedure + revert steps: docs/PHASE3_CLOUD_ON_SPOTCHECK.md
+techniques:
+  - id: T1003.001
+    name: OS Credential Dumping - LSASS Memory
+    test_numbers: [1]
+    invasive: true
+    axis: behavior
+    expectation: likely_detected
+    notes: "HEADLINE. cloud-OFF baseline = not_detected; cloud ML is expected to catch LSASS access"
+  - id: T1547.001
+    name: Registry Run Keys / Startup Folder
+    test_numbers: [1]
+    invasive: true
+    axis: behavior
+    expectation: likely_detected
+    notes: "cloud-OFF baseline = not_detected; cloud heuristics/reputation may now flag the Run key"
+  - id: T1218.010
+    name: Regsvr32 (LOLBin)
+    test_numbers: [1]
+    invasive: false
+    axis: behavior
+    expectation: likely_detected
+    notes: "cloud-OFF baseline = not_detected; LOLBin abuse often has cloud-side coverage"
+  - id: T1059.001
+    name: PowerShell
+    test_numbers: [1]
+    invasive: false
+    axis: behavior
+    expectation: likely_detected
+    notes: "CONTROL. cloud-OFF baseline = detected via AMSI (local); should stay detected with cloud on"
