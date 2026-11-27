@@ -8,6 +8,9 @@ payloads/out/
 db/*.sqlite
 db/*.sqlite-*
 
+# Generated Chapter 4 tables (regenerate: python report/reconstruct_db.py && python report/generate.py)
+report/out/
+
 # Python
 .venv/
 __pycache__/
