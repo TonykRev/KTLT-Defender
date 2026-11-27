@@ -1,0 +1,13 @@
+﻿[run_measure] machine_label=dev-win11  measurements=11  mode=DRY-RUN (safe)
+   - behavior T1059.001
+   - behavior T1059.003
+   - behavior T1562.001 [invasive] [WILL BE BLOCKED on dev machine]
+   - behavior T1140
+   - behavior T1003.001 [invasive] [WILL BE BLOCKED on dev machine]
+   - behavior T1555 [invasive] [WILL BE BLOCKED on dev machine]
+   - behavior T1547.001 [invasive] [WILL BE BLOCKED on dev machine]
+   - behavior T1053.005 [invasive] [WILL BE BLOCKED on dev machine]
+   - behavior T1082
+   - behavior T1057
+   - behavior T1218.010
+[run_measure] DRY-RUN: nothing activated. Add --yes to run for real.

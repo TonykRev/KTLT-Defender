@@ -1,5 +1,6 @@
 ﻿=== RUNS ===
 run_id=1  machine=dev-win11  defender_sig=None  started=2026-11-27T01:09:58.989564+00:00  ended=2026-11-27T01:10:42.541781+00:00
+run_id=2  machine=dev-win11  defender_sig=None  started=2026-11-27T01:28:17.898922+00:00  ended=2026-11-27T01:29:43.467137+00:00
 
 === MEASUREMENTS ===
   measurement_id      : 1
@@ -27,6 +28,70 @@ run_id=1  machine=dev-win11  defender_sig=None  started=2026-11-27T01:09:58.9895
   detect_latency_ms   : 0
   static_scan_result  : threat_found
   static_threat_name  : Virus:DOS/EICAR_Test_File
+  fidelity_score      : 1.0
+  fidelity_valid      : 1
+  evidence_source     : none
+  defender_events_json: 0 events
+  sysmon_events_json  : 0 events
+  --------------------------------------------------
+
+  measurement_id      : 3
+  axis                : static
+  variant             : v0
+  technique_id        : None
+  state               : detected
+  detection_layer     : static
+  detect_latency_ms   : 0
+  static_scan_result  : threat_found
+  static_threat_name  : Virus:DOS/EICAR_Test_File
+  fidelity_score      : 1.0
+  fidelity_valid      : 1
+  evidence_source     : none
+  defender_events_json: 0 events
+  sysmon_events_json  : 0 events
+  --------------------------------------------------
+
+  measurement_id      : 4
+  axis                : static
+  variant             : v1
+  technique_id        : None
+  state               : not_detected
+  detection_layer     : None
+  detect_latency_ms   : None
+  static_scan_result  : clean
+  static_threat_name  : None
+  fidelity_score      : 1.0
+  fidelity_valid      : 1
+  evidence_source     : none
+  defender_events_json: 0 events
+  sysmon_events_json  : 0 events
+  --------------------------------------------------
+
+  measurement_id      : 5
+  axis                : static
+  variant             : v2
+  technique_id        : None
+  state               : detected
+  detection_layer     : static
+  detect_latency_ms   : 0
+  static_scan_result  : threat_found
+  static_threat_name  : Virus:DOS/EICAR_Test_File
+  fidelity_score      : 1.0
+  fidelity_valid      : 1
+  evidence_source     : none
+  defender_events_json: 0 events
+  sysmon_events_json  : 0 events
+  --------------------------------------------------
+
+  measurement_id      : 6
+  axis                : static
+  variant             : v3
+  technique_id        : None
+  state               : not_detected
+  detection_layer     : None
+  detect_latency_ms   : None
+  static_scan_result  : clean
+  static_threat_name  : None
   fidelity_score      : 1.0
   fidelity_valid      : 1
   evidence_source     : none

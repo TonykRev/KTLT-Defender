@@ -1,0 +1,12 @@
+﻿[run_measure] machine_label=dev-win11  measurements=4  mode=LIVE RUN
+   - static   v0 [drops benign EICAR -> Defender reacts]
+   - static   v1
+   - static   v2 [drops benign EICAR -> Defender reacts]
+   - static   v3
+[run_measure] run_id=2  defender_sig=1.463.485.0
+   [ 1/4] static   v0             -> detected      (fid=1.0) MpCmdRun: threat_found
+   [ 2/4] static   v1             -> not_detected  (fid=1.0) technique ran (traces present) but Defender did not detect it
+   [ 3/4] static   v2             -> detected      (fid=1.0) MpCmdRun: threat_found
+   [ 4/4] static   v3             -> not_detected  (fid=1.0) technique ran (traces present) but Defender did not detect it
+[run_measure] DONE. Summary: {'detected': 2, 'not_detected': 2}
+[run_measure] DB: db/results.sqlite  (run_id=2)
