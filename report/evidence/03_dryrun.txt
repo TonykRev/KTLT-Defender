@@ -1,0 +1,4 @@
+﻿[run_measure] machine_label=dev-win11  measurements=2  mode=DRY-RUN (safe)
+   - static   v0 [drops benign EICAR -> Defender reacts]
+   - static   v2 [drops benign EICAR -> Defender reacts]
+[run_measure] DRY-RUN: nothing activated. Add --yes to run for real.

@@ -1,0 +1,23 @@
+﻿=== KTLT-Defender — Smoke Test Environment Snapshot ===
+Captured: 2026-11-27 08:09:21 (local, Asia/Ho_Chi_Minh)
+Machine label (config): dev-win11
+OS: Microsoft Windows 11 Home Single Language 10.0.26200
+
+--- Windows Defender ---
+
+
+AMServiceEnabled          : True
+RealTimeProtectionEnabled : True
+AntivirusEnabled          : True
+AntivirusSignatureVersion : 1.463.485.0
+AMEngineVersion           : 1.1.26100.4
+NISSignatureVersion       : 1.463.485.0
+
+
+
+
+--- Toolchain ---
+Python: Python 3.12.10
+csc.exe: C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe
+MpCmdRun: C:\ProgramData\Microsoft\Windows Defender\Platform\CurrentVersion\MpCmdRun.exe
+Git commit: 641db24

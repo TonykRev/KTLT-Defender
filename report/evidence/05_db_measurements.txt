@@ -1,0 +1,36 @@
+﻿=== RUNS ===
+run_id=1  machine=dev-win11  defender_sig=None  started=2026-11-27T01:09:58.989564+00:00  ended=2026-11-27T01:10:42.541781+00:00
+
+=== MEASUREMENTS ===
+  measurement_id      : 1
+  axis                : static
+  variant             : v0
+  technique_id        : None
+  state               : detected
+  detection_layer     : static
+  detect_latency_ms   : 0
+  static_scan_result  : threat_found
+  static_threat_name  : Virus:DOS/EICAR_Test_File
+  fidelity_score      : 1.0
+  fidelity_valid      : 1
+  evidence_source     : none
+  defender_events_json: 0 events
+  sysmon_events_json  : 0 events
+  --------------------------------------------------
+
+  measurement_id      : 2
+  axis                : static
+  variant             : v2
+  technique_id        : None
+  state               : detected
+  detection_layer     : static
+  detect_latency_ms   : 0
+  static_scan_result  : threat_found
+  static_threat_name  : Virus:DOS/EICAR_Test_File
+  fidelity_score      : 1.0
+  fidelity_valid      : 1
+  evidence_source     : none
+  defender_events_json: 0 events
+  sysmon_events_json  : 0 events
+  --------------------------------------------------
+

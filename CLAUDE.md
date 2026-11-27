@@ -44,13 +44,18 @@ _Updated: 2026-11-27_
 - ✅ **Phase 1** — Parallel build (safe part): `log_collector`(M5), `db_writer`(M8), `scorer`(M7),
   `fidelity`(M6) + **21 unit tests pass**; payloads v0–v3 + `build.ps1` (clean compile, 4608 B); `atomic_runner`(M3)
   with a guard that blocks invasive techniques; scenarios G1–G5 + `reset.ps1` with dev/cloud locks.
-- ⏳ **Phase 2 (CURRENT)** — Integration: **`run_measure.py`(M10) is still a STUB** → must implement the orchestration loop
-  (reset → build/arm → trigger → collect → score → write to DB), then run an **end-to-end smoke test** on the dev machine
-  (running v0/v2 drops a benign EICAR → Defender quarantines it; the user must give the green light "Run anyway" before running).
+- ✅ **Phase 2** — Integration: `run_measure.py`(M10) orchestration loop implemented (reset → build/arm → trigger →
+  collect → score → write DB) with a safe **dry-run default** (`--yes` required to run live). **End-to-end smoke test PASSED**
+  on dev-win11 (2026-11-27, commit `641db24`): `--static --variants v0,v2 --yes` → both **detected** via static scan
+  (`Virus:DOS/EICAR_Test_File`, fidelity 1.0). Evidence captured in `report/evidence/` (see `00_SMOKE_TEST_SUMMARY.md`).
+  **Finding for Phase 3:** detection came only from the on-demand MpCmdRun scan; `-DisableRemediation` (detect-only) +
+  RTP not scanning-on-write in-window ⇒ **no 1116/1117 Operational-log events**, and the dropped EICAR persisted. On the
+  clean admin cloud-vm (no exclusions), run some measurements **without** `-DisableRemediation` to exercise the RTP layer
+  and emit 1116/1117 telemetry.
 - ⬜ **Phase 3** — Real measurement on the cloud VM (runbook + reduced matrix).
-- ⬜ **Phase 4** — YARA/Sigma rules (M11, `rules/`) + goodware FP + ASR + report (M12, `report/generate.py` is still a stub) + Chapter 4 tables.
+- ⬜ **Phase 4** — YARA/Sigma rules (M11, `rules/`) + goodware FP + ASR + report (M12, `report/generate.py` is still a stub) + Chapter 4 tables + **report & slides**.
 
-**Next task:** implement `run_measure.py` (M10), then run a safe smoke test on the dev machine.
+**Next task:** build the **report + presentation slides** from the measurement data/evidence (user request), and prepare the Phase 3 cloud-vm runbook.
 
 ## 🔁 Habit for updating this file
 - Lock in an important decision → record it in the matching section right away.

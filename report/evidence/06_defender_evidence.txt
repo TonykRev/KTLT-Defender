@@ -1,0 +1,24 @@
+﻿=== Defender evidence check (smoke test, 2026-11-27) ===
+
+[Dropped samples after run]
+sample_v0.bin : removed by the pre-measurement reset before v2 ran
+sample_v2.bin : 68 bytes, STILL on disk after run (raw EICAR) -> RTP did NOT auto-quarantine
+
+[Defender Operational log — detection IDs 1006/1015/1116/1117/1118/1119 in last 15 min]
+NONE. Only routine health reports (1150/1151) and a signature update (2000) + config change (5007 @06:08).
+
+[Get-MpThreatDetection, last 15 min]
+(empty)
+
+[Real-time settings]
+DisableRealtimeMonitoring   : False   (RTP is ON)
+DisableScanningNetworkFiles : False
+DisableIOAVProtection       : False
+
+[Exclusions]
+N/A: requires an elevated/admin shell to read. Cannot confirm/deny a project-folder exclusion on this dev box.
+
+[Interpretation]
+Detection was via on-demand MpCmdRun scan (rc=2, Virus:DOS/EICAR_Test_File) with -DisableRemediation (detect-only).
+Detect-only => no 1116/1117 event telemetry; RTP did not scan-on-write within the 20s window.
+Scorer correctly fell back to static_scan_result=threat_found => state=detected. Pipeline behaved as designed.

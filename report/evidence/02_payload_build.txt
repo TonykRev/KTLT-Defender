@@ -1,0 +1,8 @@
+﻿=== Payload build output (csc .NET Framework v4.0.30319) ===
+Captured: 2026-11-27 08:09:36
+NOTE: Defender did NOT flag any .exe during compilation — binaries contain only the ENCODED EICAR.
+
+v0  sha256=81527d8cf7535319b8d7fa7bb07179969e8e4526e352f2cacf26636093e38f65  size=4608
+v1  sha256=ef0d6e369eb3103c1b98c0e0dc57b746cc3355dc6366c4e39f13eaeea7d79b69  size=4608
+v2  sha256=d8b1d323e82f0a1b4f3b1f3bea2d67b6c7d2c4d13647d3f032fb9dee6bd2d514  size=4608
+v3  sha256=061d808a6d941813e4fd5009fc71f8481393d24fd0142f0a2a4d9f54d58bb811  size=4608

@@ -1,0 +1,8 @@
+﻿[run_measure] machine_label=dev-win11  measurements=2  mode=LIVE RUN
+   - static   v0 [drops benign EICAR -> Defender reacts]
+   - static   v2 [drops benign EICAR -> Defender reacts]
+[run_measure] run_id=1  defender_sig=1.463.485.0
+   [ 1/2] static   v0             -> detected      (fid=1.0) MpCmdRun: threat_found
+   [ 2/2] static   v2             -> detected      (fid=1.0) MpCmdRun: threat_found
+[run_measure] DONE. Summary: {'detected': 2}
+[run_measure] DB: db/results.sqlite  (run_id=1)
