@@ -1,6 +1,6 @@
 # Automated Evaluation Tool for Windows Defender Detection (Win11) + Supplementary Rule Set
 
-KTLT course project — Academy of Cryptography Techniques (Học viện Kỹ thuật Mật mã).
+
 Team: Me and Claude max 
 
 ## Goal
