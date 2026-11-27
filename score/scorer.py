@@ -85,24 +85,21 @@ def _infer_layer(det_events, axis) -> str:
 def score(evidence, *, trigger_started_iso, fidelity_valid, had_error,
           static_result, technique_ran=None, cfg=None, axis="behavior") -> ScoreResult:
     evidence = list(evidence or [])
-
-    # 1) measurement error -> not counted
-    if had_error:
-        return ScoreResult("error", reason="measurement failed (reset/trigger/log collection failed)")
-
-    # 2) not reliable enough -> no conclusion
-    if not fidelity_valid:
-        return ScoreResult("inconclusive", evidence_source=_evidence_source(evidence),
-                           reason="fidelity below threshold — measurement is not valid")
-
     src = _evidence_source(evidence)
 
-    # 3a) static scan caught the sample
+    # --- A positive detection is ground truth and takes precedence over the error/fidelity gates. ---
+    # When Defender BLOCKS an (invasive) technique, the stimulus process usually fails, so the caller
+    # marks had_error and technique_ran=False (which caps fidelity). But Defender emitted detection
+    # events in-window: that IS the detection, not a measurement failure. The collector time-filters
+    # evidence to this measurement's window, so these events belong to this run. Checking detections
+    # first is what keeps a Defender-blocked LSASS dump scored 'detected' instead of 'error'.
+
+    # 1a) static scan caught the dropped sample
     if static_result == "threat_found":
         return ScoreResult("detected", detection_layer="static", detect_latency_ms=0,
                            evidence_source=src, reason="MpCmdRun: threat_found")
 
-    # 3b) Defender detection events are present
+    # 1b) Defender detection events are present
     det = [e for e in evidence
            if getattr(e, "source", None) == "defender" and e.event_id in DETECTION_EVENT_IDS]
     if det:
@@ -114,6 +111,17 @@ def score(evidence, *, trigger_started_iso, fidelity_valid, had_error,
         return ScoreResult("detected", detection_layer=_infer_layer(det, axis),
                            detect_latency_ms=latency, evidence_source=src,
                            reason=f"Defender events {sorted({e.event_id for e in det})}")
+
+    # --- No positive detection observed; now apply the measurement-quality gates. ---
+    # 2) measurement error -> not counted
+    if had_error:
+        return ScoreResult("error", evidence_source=src,
+                           reason="measurement failed (reset/trigger/log collection failed)")
+
+    # 3) not reliable enough -> no conclusion
+    if not fidelity_valid:
+        return ScoreResult("inconclusive", evidence_source=src,
+                           reason="fidelity below threshold — measurement is not valid")
 
     # 4) no detection — did the technique actually run?
     # Prefer the caller's authoritative signal (the atomic runner / detonation knows whether the

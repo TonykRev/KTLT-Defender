@@ -250,9 +250,10 @@ def measure_one(conn, run_id, item: dict, cfg: dict) -> dict:
         trigger_started_at = res.started_iso
         trigger_ended_at = res.ended_iso
         technique_ran = res.ran
-        if not res.ran and not res.exit_ok:
-            had_error = True
-            err_parts.append((res.stderr or "technique did not run")[:160])
+        # Defer the error decision: a trigger failure may actually be Defender BLOCKING the technique
+        # (a detection), which we can only tell once the evidence is collected below.
+        trigger_failed = (not res.ran and not res.exit_ok)
+        trigger_stderr = (res.stderr or "technique did not run")[:160]
 
     # 3) Log collection window
     collect_complete = wait_collect_window(cfg)
@@ -263,6 +264,23 @@ def measure_one(conn, run_id, item: dict, cfg: dict) -> dict:
             evidence = collect_evidence(trigger_started_at, collect_until_at, cfg)
         except Exception as e:  # log collection must not crash the measurement
             err_parts.append(f"log collection error: {type(e).__name__}")
+
+    # Behaviour axis: reconcile a deferred trigger failure with the collected evidence. If Defender
+    # fired a detection in-window it acted on the stimulus (often by BLOCKING the technique, which is
+    # what made the trigger "fail") -> count the stimulus as delivered, like the static blocked_by_av
+    # path, so fidelity is valid and the scorer returns 'detected'. Only a trigger failure with NO
+    # detection is a genuine measurement error.
+    if axis != "static":
+        defender_detected = any(
+            getattr(e, "source", None) == "defender"
+            and getattr(e, "event_id", None) in scorer.DETECTION_EVENT_IDS
+            for e in evidence
+        )
+        if defender_detected:
+            technique_ran = True
+        elif trigger_failed:
+            had_error = True
+            err_parts.append(trigger_stderr)
 
     # 4) Fidelity
     fid = fidelity.compute_fidelity(

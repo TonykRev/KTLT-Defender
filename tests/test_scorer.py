@@ -71,6 +71,32 @@ class TestScorer(unittest.TestCase):
                          had_error=False, static_result=None)
         self.assertEqual(r.detection_layer, "amsi")
 
+    def test_detection_overrides_had_error(self):
+        # Defender BLOCKED the technique: the trigger process failed (had_error upstream) but Defender
+        # emitted an in-window detection event. A detection is ground truth -> 'detected', not 'error'.
+        r = scorer.score([ev("defender", 1116)], trigger_started_iso=TRIG,
+                         fidelity_valid=True, had_error=True, static_result=None, axis="behavior")
+        self.assertEqual(r.state, "detected")
+        self.assertEqual(r.detection_layer, "behavior")
+
+    def test_detection_overrides_low_fidelity(self):
+        # Same block path also caps fidelity (technique_ran=False). A real detection still wins.
+        r = scorer.score([ev("defender", 1117)], trigger_started_iso=TRIG,
+                         fidelity_valid=False, had_error=True, static_result=None, axis="behavior")
+        self.assertEqual(r.state, "detected")
+
+    def test_had_error_without_detection_is_error(self):
+        # Trigger failed and NOTHING was detected -> genuine measurement error (regression guard).
+        r = scorer.score([], trigger_started_iso=TRIG, fidelity_valid=True,
+                         had_error=True, static_result=None, axis="behavior")
+        self.assertEqual(r.state, "error")
+
+    def test_tamper_event_is_not_a_detection_under_error(self):
+        # 5013 (Tamper Protection) is not a detection id: it must NOT rescue a had_error into detected.
+        r = scorer.score([ev("defender", 5013)], trigger_started_iso=TRIG,
+                         fidelity_valid=True, had_error=True, static_result=None, axis="behavior")
+        self.assertEqual(r.state, "error")
+
     def test_not_detected_with_sysmon(self):
         r = scorer.score([ev("sysmon", 1)], trigger_started_iso=TRIG,
                          fidelity_valid=True, had_error=False, static_result=None)

@@ -164,6 +164,57 @@ class MeasureOneBehaviorBlocked(unittest.TestCase):
         self.assertIn(rec["state"], CFG["scoring"]["states"])
 
 
+class MeasureOneBehaviorBlockedDetected(unittest.TestCase):
+    """Defender BLOCKS an invasive behavior technique: atomic fails, but Defender events -> detected."""
+
+    def test_block_with_defender_event_is_detected(self):
+        item = {"axis": "behavior", "technique_id": "T1003.001",
+                "scenario_group": "G3", "test_number": 1, "invasive": True}
+        # atomic_runner returns a failed trigger (Defender killed the process): ran=False, exit_ok=False
+        blocked = SimpleNamespace(
+            technique_id="T1003.001", test_number=1,
+            started_iso="2026-01-01T00:00:01+00:00", ended_iso="2026-01-01T00:00:02+00:00",
+            ran=False, exit_ok=False, stdout="",
+            stderr="The system cannot find the file ... operation was blocked")
+        # ...but a Defender detection event lands in the collection window.
+        det_event = SimpleNamespace(source="defender", event_id=1116,
+                                    time_created="2026-01-01T00:00:03+00:00",
+                                    message="Malware detected")
+        with mock.patch.multiple(
+                rm,
+                run_reset=mock.Mock(return_value={
+                    "reset_ok": True, "reset_done_at": "2026-01-01T00:00:00+00:00"}),
+                wait_collect_window=mock.Mock(return_value=True),
+                collect_evidence=mock.Mock(return_value=[det_event])), \
+             mock.patch.object(rm.atomic_runner, "invoke_atomic", return_value=blocked), \
+             mock.patch.object(rm.db_writer, "write_measurement", return_value=11):
+            rec = rm.measure_one(conn=object(), run_id=1, item=item, cfg=CFG)
+        self.assertEqual(rec["state"], "detected")        # NOT 'error' and NOT 'inconclusive'
+        self.assertEqual(rec["fidelity_valid"], 1)        # block counts as stimulus delivered
+        self.assertIsNone(rec["error_message"])           # the "failure" was the block itself
+        self.assertEqual(rec["detection_layer"], "behavior")
+
+    def test_block_without_defender_event_is_error(self):
+        # Same failed trigger, but no detection collected -> genuine measurement error.
+        item = {"axis": "behavior", "technique_id": "T1003.001",
+                "scenario_group": "G3", "test_number": 1, "invasive": True}
+        blocked = SimpleNamespace(
+            technique_id="T1003.001", test_number=1,
+            started_iso="2026-01-01T00:00:01+00:00", ended_iso="2026-01-01T00:00:02+00:00",
+            ran=False, exit_ok=False, stdout="", stderr="technique did not run")
+        with mock.patch.multiple(
+                rm,
+                run_reset=mock.Mock(return_value={
+                    "reset_ok": True, "reset_done_at": "2026-01-01T00:00:00+00:00"}),
+                wait_collect_window=mock.Mock(return_value=True),
+                collect_evidence=mock.Mock(return_value=[])), \
+             mock.patch.object(rm.atomic_runner, "invoke_atomic", return_value=blocked), \
+             mock.patch.object(rm.db_writer, "write_measurement", return_value=12):
+            rec = rm.measure_one(conn=object(), run_id=1, item=item, cfg=CFG)
+        self.assertEqual(rec["state"], "error")
+        self.assertIsNotNone(rec["error_message"])
+
+
 class ScorerTechniqueRanSignal(unittest.TestCase):
     """Behavioral axis with no Sysmon: the runner's technique_ran signal drives not_detected."""
 
