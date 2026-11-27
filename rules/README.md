@@ -37,8 +37,8 @@ themselves trip an AV scan (keeps the repo clean).
 ### Not yet covered
 - **T1555** (Credentials from Password Stores, G3) — too application-specific for a single generic
   rule; candidate for a targeted rule once the exact store/atomic is fixed.
-- **T1562.001** (Impair Defenses, G2) — G2 not yet measured (user-driven run pending). Tamper
-  Protection is expected to block it, so a supplementary rule may be unnecessary; revisit after G2.
+- **T1562.001** (Impair Defenses, G2) — **Defender WIN**: Tamper Protection blocks the disable attempt
+  (verified directly, evidence 17 — RTP never dropped, 5013 at trigger). No supplementary rule needed.
 - **T1059.001** (PowerShell, G1) — Defender **detected** it (AMSI), so no rule needed.
 
 ## Detection baseline vs. gap (what Defender caught on its own)

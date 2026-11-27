@@ -57,22 +57,26 @@ _Updated: 2026-11-27_
     RTP not scanning-on-write in-window ⇒ **no 1116/1117 Operational-log events**, and the dropped EICAR persisted. On the
     clean admin cloud-vm (no exclusions), run some measurements **without** `-DisableRemediation` to exercise the RTP layer
     and emit 1116/1117 telemetry.
-- ✅ **Phase 3 — MEASUREMENT COMPLETE** on cloud-vm (driven from on-prem via cross-session messaging
-  to the "setup VM" Claude; two-way comms working). Evidence `report/evidence/09–16`.
-  - **Axis B: 1 detected / 9 not_detected** across 10 behavioural techniques (G1/G3/G4/G5 run_ids 5–8,
-    G2 run_id 11). The lone detection is **T1059.001 PowerShell via AMSI** (local/runtime).
-  - **Scorer hardened** on real data: (a) detection **layer attributed by axis** (behaviour catches
-    are runtime, not "static"); (b) **a Defender block = detection**, not a measurement error
-    (positive detections outrank the error/fidelity gates). **57 tests**.
-  - **Cloud-ON spot-check (run_id 9): delta = 0/3** — with cloud demonstrably active (control fired
-    `2010` events), LSASS/Run-key/regsvr32 STILL not_detected → **the gaps are real, not a cloud-OFF
-    artifact** (resolves the validity worry). **ASR spot-check (run_id 10):** LSASS still not_detected
-    with the lsass ASR rule in Block (no 1121) → misses RTP+cloud+ASR; Sigma is the gap-filler.
-  - **CAVEATS for the report:** scoped to Atomic **test#1**; config is default-ish consumer (cloud/ASR
-    off by default, measured separately); **T1562.001 (G2) is AMBIGUOUS** — zero events incl. no 5013
-    while Tamper Protection is ON ⇒ most likely a Defender WIN (block) under-credited, needs
-    post-technique RTP-state verification before any "miss" claim; fidelity proves each atomic *ran*,
-    not that the malicious *effect* occurred. All runs fidelity=1.0, boxes reverted/stable.
+- ✅ **Phase 3 — MEASUREMENT COMPLETE & VALIDATED** on cloud-vm (driven from on-prem via cross-session
+  messaging to the "setup VM" Claude). Evidence `report/evidence/09–18`.
+  - **Axis B final (validated): of 11 techniques, Defender stopped 2 and missed 9.** The 2 wins are
+    **T1059.001** (AMSI blocked Mimikatz → detected) and **T1562.001** (Tamper Protection blocked the
+    disable → verified directly, evidence 17). The 9 gaps: T1082/T1057/T1218.010/T1059.003/T1547.001/
+    T1053.005/T1003.001/T1555/T1140.
+  - **Install-check validated every result:** 10/11 atomics were installed; **only T1562.001 was
+    missing**, which (via the bug below) had produced a false not_detected at run_id 11 — now corrected.
+    All other measurements used installed atomics and stand.
+  - **Scorer + runner hardened** on real data: layer-by-axis; a Defender block = detection; and
+    **`atomic_runner` no longer counts a non-run as `ran`** (requires the "Executing test" marker,
+    rejects "does not exist" — a missing atomic now scores inconclusive/error, not a false
+    not_detected). **59 tests**.
+  - **Cloud-ON spot-check (run_id 9): delta 0/3** (control fired `2010` cloud events) and **ASR
+    spot-check (run_id 10): LSASS still not_detected** (no 1121) → the 9 gaps are real, not a cloud/ASR
+    artifact.
+  - **T1562.001 methodology:** scored by direct **RTP-state** verification (`vm/watch_rtp.ps1`), not the
+    event-window pipeline (reset.ps1's own 5013 noise confounds impair-defenses scoring). Documented.
+  - **Report caveats:** scoped to Atomic **test#1**; default-ish consumer config; fidelity proves each
+    atomic *ran*, not that the malicious *effect* occurred. All runs fidelity=1.0, boxes reverted.
 - 🟨 **Phase 4 — IN PROGRESS.** **M11 rule set DONE** (`rules/`): 2 YARA (v1 encoded sample, v3
   fileless loader) + 7 Sigma, each tied to a run_id gap; `rules/README.md` maps them. **Validated
   live:** YARA fires 5/5 on real samples/loaders, **goodware FP = 0 / 12,450 files** (`rules/fp_scan.py`,
