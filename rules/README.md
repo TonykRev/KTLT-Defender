@@ -32,7 +32,7 @@ themselves trip an AV scan (keeps the repo clean).
 | `sigma/ktld_t1059_003_windows_command_shell.yml` | T1059.003 | G1 | cmd.exe execution → not_detected |
 | `sigma/ktld_t1547_001_registry_run_key.yml` | T1547.001 | G4 | Run-key persistence → not_detected (**cloud delta=0, confirmed**) |
 | `sigma/ktld_t1053_005_scheduled_task.yml` | T1053.005 | G4 | Scheduled-task persistence → not_detected |
-| `sigma/ktld_t1003_001_lsass_memory_access.yml` | T1003.001 | G3 | LSASS dump → not_detected (**cloud delta=0, confirmed**; ASR untested; needs Sysmon EID 10) |
+| `sigma/ktld_t1003_001_lsass_memory_access.yml` | T1003.001 | G3 | LSASS dump → not_detected (**misses RTP + cloud + ASR, all confirmed**; primary gap-filler; needs Sysmon EID 10) |
 
 ### Not yet covered
 - **T1555** (Credentials from Password Stores, G3) — too application-specific for a single generic
